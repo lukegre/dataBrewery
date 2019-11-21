@@ -44,8 +44,8 @@ ccmp:  # winds
     #    https://climatedataguide.ucar.edu/climate-data/ccmp-cross-calibrated-multi-platform-wind-vector-analysis
     path:
         url: "http://data.remss.com/ccmp/v02.0/Y{t:%Y}/M{t:%m}/CCMP_Wind_Analysis_{t:%Y%m%d}_V02.0_L3.0_RSS.nc"
-        raw:  "/nfs/kryo/work/updata/WIND-CCMPv2/v02.0/Y{t:%Y}/M{t:%m}/CCMP_Wind_Analysis_{t:%Y%m%d}_V02.0_L3.0_RSS.nc"
-        grid: "/nfs/kryo/work/gregorl/data/CCMP2_{res_time}_{res_space}_{variable}/{t:%Y}/CCMPv2_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+        raw:  "~/data/CCMPv2/raw/{t:%Y}/{t:%m}/CCMP_Wind_Analysis_{t:%Y%m%d}_V02.0_L3.0_RSS.nc"
+        grid: "~/data/CCMPv2/grd/{t:%Y}/{t:%m}/CCMP_Wind_Analysis_{t:%Y%m%d}_V02.0_L3.0_RSS.nc"
     date:
         start: '1987-06-01'
         end: '2018-12-31'
