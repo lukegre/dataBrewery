@@ -22,8 +22,8 @@ aviso:  # sea surface height
         raw:  "/nfs/kryo/work/updata/aviso/aviso_2019/AVISO_dt_GLOB_allsat_L4_daily/{t:%Y}/dt_global_allsat_phy_l4_{t:%Y%m%d}.nc"
         grid: "/nfs/kryo/work/gregorl/data/aviso_{res_time}_{res_space}_{variable}/{t:%Y}/AVISO_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
     login:
-        username: "lgregor1"
-        password: "a%oN23a#CH13^@"
+        username: ""
+        password: ""
     date:
         start: '1993-01-01'
         end: '2018-12-31'
@@ -70,8 +70,8 @@ ecco4:  # mixed layer depth
         raw:  "/nfs/kryo/work/updata/ECCO4/eccoV4r3/{t:%Y}/MXLDEPTH_{t:%Y_%m}.nc"
         grid: "/nfs/kryo/work/gregorl/data/ECCO4r3_{res_time}_{res_space}_{variable}/{t:%Y}/ECCO4_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
     login:
-        username: "luke.gregor"
-        password: "OMyXvZuISkVLuGeihX@"
+        username: ""
+        password: ""
     date:
         start: '1992-01-01'
         end: '2017-12-31'
@@ -129,8 +129,8 @@ globcolour:  # chlorophyll
         raw:  "/nfs/kryo/work/updata/globcolour/globcolour_daily/{t:%Y}/{t:%m}/{t:%d}/L3m_{t:%Y%m%d}__GLOB_25_GSM-CHL1_DAY_00.nc"
         grid: "/nfs/kryo/work/gregorl/data/globcolour_{res_time}_{res_space}_{variable}/{t:%Y}/Globcolour_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
     login:
-        username: "ftp_gc_LGregor"
-        password: "LGregor_4976"
+        username: ""
+        password: ""
     date:
         start: '2019-08-01'
         end: '2019-11-20'
@@ -150,8 +150,8 @@ globcurrent:  # current velocities
         raw:  "/nfs/kryo/work/updata/globcurrent/15m_total/{t:%Y}/{t:%m}/{t:%Y%m%d}-GLOBCURRENT-L4-CUReul_15m-ALT_SUM-v03.0-fv01.0.nc"
         grid: "/nfs/kryo/work/gregorl/data/globcurrent_15m_{res_time}_{res_space}_{variable}/{t:%Y}/Globcurrent_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
     login:
-        username: "gg1f3e8"
-        password: "xG3jZhT9"
+        username: ""
+        password: ""
     date:
         start: '1993-01-01'
         end: '2018-12-31'
@@ -188,8 +188,8 @@ oc_cci:  # chlorophyll
         start: '1997-09-01'
         end: '2018-12-31'
     login:
-        username: oc-cci-data
-        password: ELaiWai8ae
+        username: 
+        password: 
     keywords:
         - ocean_color
         - chlorophyll
@@ -223,8 +223,8 @@ smos_cec:  # salinity
         raw:  "/nfs/kryo/work/updata/SSS-SMOS-CEC/CEC-LoceanV3/{t:%Y/%m}/SMOS_L3_DEBIAS_LOCEAN_AD_{t:%Y%m%d}_EASE_09d_25km_v03.nc"
         grid: "/nfs/kryo/work/gregorl/data/SMOS-CEC_{res_time}_{res_space}_{variable}/{t:%Y}/SMOS-CEC_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
     login:
-        username: ext-catds-cecos-locean
-        password: catds2010
+        username: 
+        password: 
     date:
         start: '2010-08-01'
         end: '2017-12-31'
@@ -242,8 +242,8 @@ smos_bec:  # salinity
         raw:  "/nfs/kryo/work/updata/SSS-SMOS-BEC/SMOS_BEC/Global/v1.0/L3/9day/{t:%Y}/BEC_ADVAOA_B_{t:%Y%m%d}T000000_025_001.nc"
         grid: "/nfs/kryo/work/gregorl/data/SMOS-BEC_{res_time}_{res_space}_{variable}/{t:%Y}/SMOS-BEC_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
     login:
-        username: "gregorl"
-        password: "Eegh7maen7eg7g"
+        username: ""
+        password: ""
         port: 27500
     date:
         start: '2011-01-01'
