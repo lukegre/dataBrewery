@@ -1,7 +1,7 @@
 
 # this file is organised by data source and contains:
 #    usernamenames and passwords for raw sources
-#    paths for raw and gridded data
+#    paths for raw an
 #        Raw paths contain the remote data downloaded locally
 #        Path notation uses {t:} for Timestamp object - following notation uses datetime as in link below
 #        https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
@@ -17,10 +17,8 @@ aviso:  # sea surface height
     # Sign up at http://marine.copernicus.eu/services-portfolio/register-now/
     # dataset citation found at:
     #     https://www.aviso.altimetry.fr/en/data/product-information/citation-and-aviso-products-licence.html
-    path:
-        url: "ftp://my.cmems-du.eu/Core/SEALEVEL_GLO_PHY_L4_REP_OBSERVATIONS_008_047/dataset-duacs-rep-global-merged-allsat-phy-l4/{t:%Y}/dt_global_allsat_phy_l4_{t:%Y%m%d}_*.nc"
-        raw:  "/nfs/kryo/work/updata/aviso/aviso_2019/AVISO_dt_GLOB_allsat_L4_daily/{t:%Y}/dt_global_allsat_phy_l4_{t:%Y%m%d}.nc"
-        grid: "/nfs/kryo/work/gregorl/data/aviso_{res_time}_{res_space}_{variable}/{t:%Y}/AVISO_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url: "ftp://my.cmems-du.eu/Core/SEALEVEL_GLO_PHY_L4_REP_OBSERVATIONS_008_047/dataset-duacs-rep-global-merged-allsat-phy-l4/{t:%Y}/dt_global_allsat_phy_l4_{t:%Y%m%d}_*.nc"
+    path:  "~/data/aviso/aviso_2019/AVISO_dt_GLOB_allsat_L4_daily/{t:%Y}/dt_global_allsat_phy_l4_{t:%Y%m%d}.nc"
     login:
         username: ""
         password: ""
@@ -42,10 +40,8 @@ ccmp:  # winds
     #                   https://doi.org/10.1175/2010BAMS2946.1
     # dataset citation found at:
     #    https://climatedataguide.ucar.edu/climate-data/ccmp-cross-calibrated-multi-platform-wind-vector-analysis
-    path:
-        url: "http://data.remss.com/ccmp/v02.0/Y{t:%Y}/M{t:%m}/CCMP_Wind_Analysis_{t:%Y%m%d}_V02.0_L3.0_RSS.nc"
-        raw:  "~/data/CCMPv2/raw/{t:%Y}/{t:%m}/CCMP_Wind_Analysis_{t:%Y%m%d}_V02.0_L3.0_RSS.nc"
-        grid: "~/data/CCMPv2/grd/{t:%Y}/{t:%m}/CCMP_Wind_Analysis_{t:%Y%m%d}_V02.0_L3.0_RSS.nc"
+    url: "http://data.remss.com/ccmp/v02.0/Y{t:%Y}/M{t:%m}/CCMP_Wind_Analysis_{t:%Y%m%d}_V02.0_L3.0_RSS.nc"
+    path:  "~/data/CCMPv2/{t:%Y}/{t:%m}/CCMP_Wind_Analysis_{t:%Y%m%d}_V02.0_L3.0_RSS.nc"
     date:
         start: '1987-06-01'
         end: '2018-12-31'
@@ -65,10 +61,8 @@ ecco4:  # mixed layer depth
     #                    https://doi.org/1721.1/110380
     #                    Forget et al. (2015)
     #                    https://doi.org/10.5194/gmd-8-3071-2015
-    path:
-        url:  "https://ecco.jpl.nasa.gov/drive/files/Version4/Release4/interp_monthly/MXLDEPTH/{t:%Y}/MXLDEPTH_{t:%Y_%m}.nc"
-        raw:  "/nfs/kryo/work/updata/ECCO4/eccoV4r3/{t:%Y}/MXLDEPTH_{t:%Y_%m}.nc"
-        grid: "/nfs/kryo/work/gregorl/data/ECCO4r3_{res_time}_{res_space}_{variable}/{t:%Y}/ECCO4_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "https://ecco.jpl.nasa.gov/drive/files/Version4/Release4/interp_monthly/MXLDEPTH/{t:%Y}/MXLDEPTH_{t:%Y_%m}.nc"
+    path:  "~/data/ECCO4/eccoV4r3/{t:%Y}/MXLDEPTH_{t:%Y_%m}.nc"
     login:
         username: ""
         password: ""
@@ -84,10 +78,8 @@ en4:  # temperature / salinity / mixed layer depth (calculated)
     # no login is required.
     # dataset citation: Good et al. (2013)
     #                   http://doi.org/10.1002/2013JC009067
-    path:
-        url: "https://www.metoffice.gov.uk/hadobs/en4/data/en4-2-1/EN.4.2.1.analyses.g10.{t:%Y}.zip"
-        raw: "/nfs/kryo/work/updata/en4/EN.4.2.1/ObectiveAnalysis/EN.4.2.1.analyses.g10.{t:%Y}.zip"
-        grid: "/nfs/kryo/work/gregorl/data/EN421_{res_time}_{res_space}_{variable}/{t:%Y}/EN4_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url: "https://www.metoffice.gov.uk/hadobs/en4/data/en4-2-1/EN.4.2.1.analyses.g10.{t:%Y}.zip"
+    path: "~/data/en4/EN.4.2.1/ObectiveAnalysis/EN.4.2.1.analyses.g10.{t:%Y}.zip"
     date:
         start: '1981-01-01'
         end: '2017-12-31'
@@ -105,10 +97,8 @@ era5:  # winds / sea level pressure
     # dataset citation: Copernicus Climate Change Service (C3S) (2017): ERA5: Fifth generation of ECMWF atmospheric reanalyses of the global climate . Copernicus Climate Change Service Climate Data Store (CDS), date of access. https://cds.climate.copernicus.eu/cdsapp#!/home
     # other reference: Hersbach et al. (2019)
     #                  http://dx.doi.org/10.21957/vf291hehd7
-    path:
-        url: "cds://cdsapi.Client/custom/download/scheme"
-        raw:  "/nfs/kryo/work/updata/ECMWF-reanalysis/era5_netcdf/hourly/{t:%Y}/ERA5_{t:%Y_%m}.nc"
-        grid: "/nfs/kryo/work/gregorl/data/era5_{res_time}_{res_space}_{variable}/{t:%Y}/ERA5_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url: "cds://cdsapi.Client/custom/download/scheme"
+    path:  "~/data/ECMWF-reanalysis/era5_netcdf/hourly/{t:%Y}/ERA5_{t:%Y_%m}.nc"
     date:
         start: '1981-01-01'
         end: '2018-12-31'
@@ -124,10 +114,8 @@ globcolour:  # chlorophyll
     # on the file name
     # journal reference: Maritorena et al. (2010)
     #                    https://doi.org/10.1016/j.rse.2010.04.002
-    path:
-        url:  "ftp://ftp.hermes.acri.fr/GLOB/merged/day/{t:%Y}/{t:%m}/{t:%d}/L3m_{t:%Y%m%d}__GLOB_25_GSM-*_CHL1_DAY_00.nc"
-        raw:  "/nfs/kryo/work/updata/globcolour/globcolour_daily/{t:%Y}/{t:%m}/{t:%d}/L3m_{t:%Y%m%d}__GLOB_25_GSM-CHL1_DAY_00.nc"
-        grid: "/nfs/kryo/work/gregorl/data/globcolour_{res_time}_{res_space}_{variable}/{t:%Y}/Globcolour_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "ftp://ftp.hermes.acri.fr/GLOB/merged/day/{t:%Y}/{t:%m}/{t:%d}/L3m_{t:%Y%m%d}__GLOB_25_GSM-*_CHL1_DAY_00.nc"
+    path:  "~/data/globcolour/globcolour_daily/{t:%Y}/{t:%m}/{t:%d}/L3m_{t:%Y%m%d}__GLOB_25_GSM-CHL1_DAY_00.nc"
     login:
         username: ""
         password: ""
@@ -145,10 +133,8 @@ globcurrent:  # current velocities
     # create account at: http://globcurrent.ifremer.fr/products-data/data-catalogue
     # journal citation: Rio et al. (2014)
     #                   https://doi.org/10.1002/2014GL061773
-    path:
-        url:  "ftp://eftp.ifremer.fr/data/globcurrent/v3.0/global_025_deg/total_15m/{t:%Y}/{t:%j}/{t:%Y%m%d}-GLOBCURRENT-L4-CUReul_15m-ALT_SUM-v03.0-fv01.0.nc"
-        raw:  "/nfs/kryo/work/updata/globcurrent/15m_total/{t:%Y}/{t:%m}/{t:%Y%m%d}-GLOBCURRENT-L4-CUReul_15m-ALT_SUM-v03.0-fv01.0.nc"
-        grid: "/nfs/kryo/work/gregorl/data/globcurrent_15m_{res_time}_{res_space}_{variable}/{t:%Y}/Globcurrent_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "ftp://eftp.ifremer.fr/data/globcurrent/v3.0/global_025_deg/total_15m/{t:%Y}/{t:%j}/{t:%Y%m%d}-GLOBCURRENT-L4-CUReul_15m-ALT_SUM-v03.0-fv01.0.nc"
+    path:  "~/data/globcurrent/15m_total/{t:%Y}/{t:%m}/{t:%Y%m%d}-GLOBCURRENT-L4-CUReul_15m-ALT_SUM-v03.0-fv01.0.nc"
     login:
         username: ""
         password: ""
@@ -166,10 +152,8 @@ oisst:  # sea surface temperature
     #                   https://doi.org/10.1175/2007JCLI1824.1
     # dataset citation: Banzon et al. (2016)
     #                   https://doi.org/10.5194/essd-8-165-2016
-    path:
-        url:  "https://data.nodc.noaa.gov/ghrsst/GDS2/L4/GLOB/NCEI/AVHRR_OI/v2/{t:%Y}/{t:%j}/{t:%Y%m%d}120000-NCEI-L4_GHRSST-SSTblend-AVHRR_OI-GLOB-v02.0-fv02.0.nc"
-        raw:  "/nfs/kryo/work/updata/SST-AVHRR-NCEI/NCEI-L4_GHRSST-SSTblend-AVHRR_OI-GLOB-v02/{t:%Y}/{t:%Y%m%d}120000-NCEI-L4_GHRSST-SSTblend-AVHRR_OI-GLOB-v02.0-fv02.0.nc"
-        grid: "/nfs/kryo/work/gregorl/data/OISST_{res_time}_{res_space}_{variable}/{t:%Y}/OISST_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "https://data.nodc.noaa.gov/ghrsst/GDS2/L4/GLOB/NCEI/AVHRR_OI/v2/{t:%Y}/{t:%j}/{t:%Y%m%d}120000-NCEI-L4_GHRSST-SSTblend-AVHRR_OI-GLOB-v02.0-fv02.0.nc"
+    path:  "~/data/SST-AVHRR-NCEI/NCEI-L4_GHRSST-SSTblend-AVHRR_OI-GLOB-v02/{t:%Y}/{t:%Y%m%d}120000-NCEI-L4_GHRSST-SSTblend-AVHRR_OI-GLOB-v02.0-fv02.0.nc"
     date:
         start: '1982-01-01'
         end: '2018-12-31'
@@ -181,9 +165,8 @@ oisst:  # sea surface temperature
 oc_cci:  # chlorophyll
     # https://esa-oceancolour-cci.org/   and    https://www.oceancolour.org/
     # https://esa-oceancolour-cci.org/sites/esa-oceancolour-cci.org/files/oc-cci_article_ocean_challenge_v21.pdf
-    path:
-        url: "ftp://oceancolour.org/occci-v4.0/geographic/netcdf/daily/chlor_a/{t:%Y}/ESACCI-OC-L3S-CHLOR_A-MERGED-1D_DAILY_4km_GEO_PML_OCx-{t:%Y%m%d}-fv4.0.nc"
-        raw: "/nfs/kryo/work/updata/CHL-CCI/ESACCI/ESACCI-OC-L3S-CHLOR_A-MERGED-1D_DAILY_4km_GEO_PML_OCx-{t:%Y%m%d}-fv4.0.nc"
+    url: "ftp://oceancolour.org/occci-v4.0/geographic/netcdf/daily/chlor_a/{t:%Y}/ESACCI-OC-L3S-CHLOR_A-MERGED-1D_DAILY_4km_GEO_PML_OCx-{t:%Y%m%d}-fv4.0.nc"
+    path: "~/data/CHL-CCI/ESACCI/ESACCI-OC-L3S-CHLOR_A-MERGED-1D_DAILY_4km_GEO_PML_OCx-{t:%Y%m%d}-fv4.0.nc"
     date:
         start: '1997-09-01'
         end: '2018-12-31'
@@ -199,10 +182,8 @@ sst_cci:  # sea surface temperature
     # ESA Sea Surface Temperature Climate Change Initiative (ESA SST CCI)
     # product information: https://catalogue.ceda.ac.uk/uuid/c65ce27928f34ebd92224c451c2a8bed
     # data citation: http://dx.doi.org/10.5285/2262690A-B588-4704-B459-39E05527B59A
-    path:
-        url:  "ftp://anon-ftp.ceda.ac.uk/neodc/esacci/sst/data/CDR_v2/Analysis/L4/v2.1/{t:%Y/%m/%d/%Y%m%d}120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_CDR2.1-v02.0-fv01.0.nc"
-        raw:  "/nfs/kryo/work/updata/SST-AVHRR-CCI/CDRv2/{t:%Y/%m/%Y%m%d}120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_CDR2.1-v02.0-fv01.0.nc"
-        grid: "/nfs/kryo/work/gregorl/data/CCI-SST_{res_time}_{res_space}_{variable}/{t:%Y}/CCISST_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "ftp://anon-ftp.ceda.ac.uk/neodc/esacci/sst/data/CDR_v2/Analysis/L4/v2.1/{t:%Y/%m/%d/%Y%m%d}120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_CDR2.1-v02.0-fv01.0.nc"
+    path:  "~/data/SST-AVHRR-CCI/CDRv2/{t:%Y/%m/%Y%m%d}120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_CDR2.1-v02.0-fv01.0.nc"
     date:
         start: '1982-01-01'
         end: '2016-12-31'
@@ -218,10 +199,8 @@ smos_cec:  # salinity
     #                   http://doi.org/10.17882/52804#54823
     #                   http://doi.org/10.1016/j.rse.2018.05.022
 
-    path:
-        url:  "ftp://ftp.ifremer.fr/Ocean_products/L3_DEBIAS_LOCEAN_v3/debiasedSSS_09days_v3/SMOS_L3_DEBIAS_LOCEAN_AD_{t:%Y%m%d}_EASE_09d_25km_v03.nc"
-        raw:  "/nfs/kryo/work/updata/SSS-SMOS-CEC/CEC-LoceanV3/{t:%Y/%m}/SMOS_L3_DEBIAS_LOCEAN_AD_{t:%Y%m%d}_EASE_09d_25km_v03.nc"
-        grid: "/nfs/kryo/work/gregorl/data/SMOS-CEC_{res_time}_{res_space}_{variable}/{t:%Y}/SMOS-CEC_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "ftp://ftp.ifremer.fr/Ocean_products/L3_DEBIAS_LOCEAN_v3/debiasedSSS_09days_v3/SMOS_L3_DEBIAS_LOCEAN_AD_{t:%Y%m%d}_EASE_09d_25km_v03.nc"
+    path:  "~/data/SSS-SMOS-CEC/CEC-LoceanV3/{t:%Y/%m}/SMOS_L3_DEBIAS_LOCEAN_AD_{t:%Y%m%d}_EASE_09d_25km_v03.nc"
     login:
         username: 
         password: 
@@ -237,10 +216,8 @@ smos_bec:  # salinity
     # create account at: http://bec.icm.csic.es/bec-ftp-service-registration/
     # journal citation: Olmedo et al. (2017)
     #                   https://doi.org/10.1016/j.rse.2017.02.023
-    path:
-        url:  "sftp://becftp.icm.csic.es/data/OCEAN/SSS/SMOS/Global/v1.0/L3/9day/{t:%Y}/BEC_ADVAOA_B_{t:%Y%m%d}T000000_*_025_001.nc"
-        raw:  "/nfs/kryo/work/updata/SSS-SMOS-BEC/SMOS_BEC/Global/v1.0/L3/9day/{t:%Y}/BEC_ADVAOA_B_{t:%Y%m%d}T000000_025_001.nc"
-        grid: "/nfs/kryo/work/gregorl/data/SMOS-BEC_{res_time}_{res_space}_{variable}/{t:%Y}/SMOS-BEC_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "sftp://becftp.icm.csic.es/data/OCEAN/SSS/SMOS/Global/v1.0/L3/9day/{t:%Y}/BEC_ADVAOA_B_{t:%Y%m%d}T000000_*_025_001.nc"
+    path:  "~/data/SSS-SMOS-BEC/SMOS_BEC/Global/v1.0/L3/9day/{t:%Y}/BEC_ADVAOA_B_{t:%Y%m%d}T000000_025_001.nc"
     login:
         username: ""
         password: ""
@@ -253,19 +230,15 @@ smos_bec:  # salinity
 
 
 socat:  # fco2
-    path:
-        url:  "https://www.socat.info/socat_files/v2019/SOCATv2019.tsv.zip"
-        raw:  "/nfs/kryo/work/updata/SOCAT/SOCATv2019.tsv.zip"
-        grid: "/nfs/kryo/work/gregorl/data/SOCATv2019_{res_time}_{res_space}_{variable}/{t:%Y}/SOCATv2019_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "https://www.socat.info/socat_files/v2019/SOCATv2019.tsv.zip"
+    path:  "~/data/SOCAT/SOCATv2019.tsv.zip"
     keywords:
         - fco2
 
 
 somffn:  # fco2
-    path:
-        url:  "https://www.nodc.noaa.gov/archive/arc0105/0160558/4.4/data/0-data/MPI_SOM-FFN_v2018/spco2_MPI_SOM-FFN_v2018.nc"
-        raw:  "/nfs/kryo/work/updata/pco2_landschuetzer/mpi_som-ffn_v2018/spco2_MPI_SOM-FFN_v2018.nc"
-        grid: "/nfs/kryo/work/gregorl/data/SOMFFNv2018_{res_time}_{res_space}_{variable}/{t:%Y}/SOMFFNv2018_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "https://www.nodc.noaa.gov/archive/arc0105/0160558/4.4/data/0-data/MPI_SOM-FFN_v2018/spco2_MPI_SOM-FFN_v2018.nc"
+    path:  "~/data/pco2_landschuetzer/mpi_som-ffn_v2018/spco2_MPI_SOM-FFN_v2018.nc"
     keywords:
         - fco2
         - socom
@@ -277,16 +250,13 @@ mld_holte:  # mixed layer depth
     # mld_da_* = mixed layer depth determined by algorithm
     # journal citation: Holte et al. (2017)
     #                   https://doi.org/10.1002/2017GL073426
-    path:
-        url:  "http://mixedlayer.ucsd.edu/data/Argo_mixedlayers_monthlyclim_05092018.nc"
-        raw:  "/nfs/kryo/work/updata/mld/mld_holte/version2018/Argo_mixedlayers_monthlyclim_05092018.nc"
-        grid: "/nfs/kryo/work/gregorl/data/holte_{res_time}_{res_space}_{variable}/{t:%Y}/Holte2018_{res_time}_{res_space}_{variable}_{t:%Y%m}.nc"
+    url:  "http://mixedlayer.ucsd.edu/data/Argo_mixedlayers_monthlyclim_05092018.nc"
+    path:  "~/data/mld/mld_holte/version2018/Argo_mixedlayers_monthlyclim_05092018.nc"
     keywords:
         - mixed_layer
 
 
 smos_cci:
     # http://cci.esa.int/salinity
-    path:
-        url: "ftp://anon-ftp.ceda.ac.uk/neodc/esacci/sea_surface_salinity/data/v01.8/7days/{t:%Y}/ESACCI-SEASURFACESALINITY-L4-SSS-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km-{t:%Y%m%d}-fv1.8.nc"
-        raw: "/nfs/kryo/work/updata/SSS-SMOS-CCI/SMOS_CCI/{t:%Y}/ESACCI-SEASURFACESALINITY-L4-SSS-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km-{t:%Y%m%d}-fv1.8.nc"
+    url: "ftp://anon-ftp.ceda.ac.uk/neodc/esacci/sea_surface_salinity/data/v01.8/7days/{t:%Y}/ESACCI-SEASURFACESALINITY-L4-SSS-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km-{t:%Y%m%d}-fv1.8.nc"
+    path: "~/data/SSS-SMOS-CCI/SMOS_CCI/{t:%Y}/ESACCI-SEASURFACESALINITY-L4-SSS-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km-{t:%Y%m%d}-fv1.8.nc"
