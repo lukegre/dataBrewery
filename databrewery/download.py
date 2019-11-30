@@ -419,7 +419,6 @@ def gunzip(zip_path, dest_path=None):
 
 def determine_connection_type(remote_url_unformatted):
     from urllib.parse import urlparse
-
     url = urlparse(remote_url_unformatted)
 
     if url.scheme == '':
