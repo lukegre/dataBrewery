@@ -4,6 +4,8 @@ config.yaml
 __pycache__/
 *.py[cod]
 *$py.class
+.DS_Store
+config.yaml
 
 # C extensions
 *.so
@@ -57,3 +59,5 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+.vscode/

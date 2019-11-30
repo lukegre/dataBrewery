@@ -17,7 +17,7 @@ def read_config_as_dict(filepath):
 class dataBreweryConfig:
 
     def __init__(self, config_file_path=path):
-        from .utils.core import Object
+        from .utils import Object
         import os
 
         config_dict = self._read_config_as_dict(config_file_path)
