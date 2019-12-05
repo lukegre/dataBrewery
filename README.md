@@ -9,5 +9,7 @@ The downloading function will determine if the file is readable by a netCDF read
 
 The Brewery class allows you to access the local path of the data, regardless of where your files are stored. This is for quick easy access to centrally downloaded data for each of your projects. 
 
+Se the demo file for basic usage. 
+
 More documentation will follow. 
 
