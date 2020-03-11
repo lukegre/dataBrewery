@@ -140,8 +140,8 @@ class Downloader:
             from zipfile import ZipFile as opener, BadZipFile as error
         else:
             error = BaseException
-            opener = lambda p: None  # dummy opener
-
+            opener = open  # dummy opener
+            
         # tries to open the path, if it fails, not valid, if it passes, valid
         try:
             with opener(local_path) as obj:
