@@ -1,0 +1,4 @@
+numpy
+pandas
+tqdm
+xarray>=0.14.1
