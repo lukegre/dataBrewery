@@ -1,19 +1,14 @@
 from . utils import BrewError, ConfigError, BrewWarning
-from . utils import Path, ObjectDict, URL
 
 
-class DataKeg:
-    def __init__(self, variable_name, config_dict, verbose=2):
+class Record:
+    def __init__(self, Record_name, config_dict, verbose=2):
 
-        self.name = variable_name
+        self.name = Record_name
         self.debug = True if verbose == 2 else False
         self.verbose = verbose
         self.__config__ = config_dict
 
-        self._process_dates()
-        self._process_paths()
-        self._process_login()
-        self._process_keywords()
         self.downloaders = []
 
     def __str__(self):
@@ -22,7 +17,7 @@ class DataKeg:
         L = 80 - (len(name) + 2)
         eq = "="
         txt = f"{eq:=>{L//2-1}}  {name: >2}{blank:=<{L//2-1}}\n"
-        n = len(self.name) + 2
+        # n = len(self.name) + 2
         for key in ['url', 'path', 'date', 'login', 'keywords']:
             keyu = key.upper()
             vals = getattr(self, key).__str__()
@@ -36,29 +31,23 @@ class DataKeg:
         return txt
 
     def _process_paths(self):
-        if 'path' not in self.__config__:
-            raise ConfigError(f'Config for {self.name} requires at least a `path` entry '
-                              'where files are stored locally.')
-        else: 
-            self.path = Path(self.__config__['path'])
-
-        if 'url' not in self.__config__:
-            raise ConfigError(f'Config for {self.name} requires at least a `url` entry '
-                              'where files are stored remotely.')
+        if 'local_store' not in self.__config__:
+            raise ConfigError(
+                f'Config for {self.name} requires at least a '
+                f' `local_store` entry  where files are stored locally.')
         else:
-            self.url = URL(self.__config__['url'])
-            
+            self.path = self.__config__['local_store']
+
+        if 'url' not in self.__config__['remote']:
+            raise ConfigError(
+                f'Config for {self.name} requires at least a '
+                f'`remote.url` entry where files are stored remotely.')
+        else:
+            self.url = URL(self.__config__['remote']['url'])
+
             from .download import determine_connection_type
             self._downloader = determine_connection_type(self.url)
-            
-        # assume all non-standard entries are paths
-        all_items = set(self.__config__.keys())
-        standard_items = set(['path', 'url', 'date', 'login', 'keywords'])
-        custom_items = all_items - standard_items
-        
-        for key in custom_items:
-            setattr(self, key, Path(self.__config__[key]))        
-                
+
     def _process_dates(self):
         from pandas import Timestamp
         from warnings import warn
@@ -73,15 +62,15 @@ class DataKeg:
         dates['end'] = dates.get('end', str(today)[:10])
         
         self.date = ObjectDict(dates)
-    
+
     def dprint(self, *msg):
         if self.debug:
             print(*msg)
-    
+
     def qprint(self, *msg):
         if self.verbose >= 1:
             print(*msg)
-    
+
     def _process_login(self):
         login = self.__config__.get('login', {})
         self.login = ObjectDict(login)
@@ -109,7 +98,7 @@ class DataKeg:
                              'str(YYYY-MM-DD) or Timestamp or DatetimeIndex')
             
         return dates
-    
+
     def _date_range_check(self, start, end):
         from warnings import warn
         message = (
@@ -121,7 +110,7 @@ class DataKeg:
         dend = self._date_check(end)
         if (dstart < self.date.start) or (dend > self.date.end):
             warn(message, BrewWarning)
-    
+
     def _download_single_process(self, remote_local_files, queue, verbose):
         downloader = self._initiate_connection()
         downloader.verbose = verbose
@@ -199,31 +188,28 @@ class DataKeg:
 
         self.qprint(f"Missing files ({len(missing_files)}) stored in {self.name}.missing_files")
         self.missing_files = missing_files
-    
 
-class Brewery:
-    def __init__(self, config_file='./config.yaml', verbose=1):
-        from . config import read_config_as_dict
-        
+
+class Catalog:
+    def __init__(self, catalog_file='./config.yaml', verbose=1):
+        from . catalog import read_catalog
+
         self.verbose = verbose
-        self._config_dict = read_config_as_dict(config_file)
-        self._create_kegs()
-        self.taps = Taps(self, 'path')
-        
-    def _create_kegs(self):
-        
+        self._config_dict = read_catalog(catalog_file)
+        self._create_records()
+        # self.taps = VariableCollection(self, 'path')
+
+    def _create_records(self):
+
         for key in self._config_dict.keys():
-            barrel = DataKeg(key, self._config_dict[key], verbose=self.verbose)
-            setattr(self, key, barrel)
-            
-        if self.verbose:
-            print(self)   
+            record = Record(key, self._config_dict[key], verbose=self.verbose)
+            setattr(self, key, record)
 
     def __str__(self):
         import re
 
         out = ""
-        txt = 'Your Brewery contains the following DataKegs'
+        txt = 'Your Brewery contains the following Records'
         b = "="
         out += f"{txt}\n{b:=>{len(txt)}}\n" 
         for key in self._config_dict.keys():
@@ -240,10 +226,10 @@ class Brewery:
         return out
 
 
-class Taps:
+class VariableCollection:
     def __init__(self, craft_brewery, attr):
         from collections import defaultdict
-        
+
         barrel_names = craft_brewery._config_dict.keys()
         barrels = [getattr(craft_brewery, k) for k in barrel_names]
 
@@ -259,7 +245,7 @@ class Taps:
     def __repr__(self):
         out = ""
         keys = sorted(self._kw.keys())
-        out += "VARIABLE NAME       DATASET\n"
+        out += "Record NAME       DATASET\n"
         rule = "-" * len(out) + "\n"
         out += rule
         for key in keys:
@@ -270,5 +256,3 @@ class Taps:
             out += '\n'
         out += rule
         return out
-
-

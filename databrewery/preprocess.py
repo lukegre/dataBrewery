@@ -12,7 +12,7 @@ class DataProcressor:
         self.processor_proven = False
         self.processor = processor
         self._previous_savename = ''
-    
+
     def get_existing_and_missing_raw_files(self, date_range):
         from os.path import isfile
         expected_files = set(self.path.raw[date_range])
@@ -25,7 +25,7 @@ class DataProcressor:
             self.qprint(f"No files for {self.name} from {ds[0]} to {ds[-1]}")
             
         return existing_files, missing_files
-    
+
     def _process_date_slice(self, dates, file_concat_freq='1M'): 
         
         def slice_dates_by_concat_freq(date_range, concat_freq):
@@ -123,16 +123,16 @@ class DataProcressor:
                 xds.attrs['missing_files'] = str(missing_files)
             
             dataset_variables_to_individual_netcdfs(xds, savename)
-    
+
     def qprint(self, *msg):
         if self.verbose == 1:
             print(*msg)
-            
+
     def vprint(self, *msg):
         if self.verbose == 2:
             print(*msg)
 
-            
+
 class NetCDFpreprocessorWrapper:
     from warnings import filterwarnings
     filterwarnings('ignore', ".*reduce.*", RuntimeWarning)
@@ -165,8 +165,8 @@ class ZipPreprocessorWrapper:
                                 parallel=True, 
                                 preprocess=self.processor)
         return xds
-    
-    
+
+
 def is_local_file_valid(local_path):
     from os.path import isfile
     if not isfile(local_path):
@@ -210,8 +210,8 @@ def rename_to_latlon(xds):
         xds = _netcdf_add_brew_hist(xds, 'renamed time lats and lons')
 
     return xds
-    
-    
+
+
 def center_coords_at_0(xds):
     import numpy as np
     

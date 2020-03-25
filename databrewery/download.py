@@ -382,41 +382,6 @@ def shorten_path_for_print(path, maxlen=100):
     return out
 
 
-def unzip(zip_path, dest_dir=None):
-
-    from zipfile import ZipFile
-
-    if not os.path.isfile(zip_path):
-        raise OSError(f'The zip file does not exist: {zip_path}')
-
-    if dest_dir is None:
-        dest_dir = os.path.split(zip_path)[0]
-
-    with ZipFile(zip_path, 'r') as zip:
-        flist_zip = set(zip.namelist())
-        flist_dir = set(os.listdir(dest_dir))
-
-        files_to_extract = list(flist_zip - flist_dir)
-
-        if files_to_extract == []:
-            print(f'All files in {zip_path} exist in {dest_dir}')
-
-        zip.extractall(path=dest_dir, members=files_to_extract)
-
-
-def gunzip(zip_path, dest_path=None):
-    import shutil
-    import gzip
-
-    if dest_path is None:
-        dest_path = zip_path.replace('.gz', '')
-
-    with gzip.open(zip_path, 'rb') as f_in:
-        with open(dest_path, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-            return f_out
-
-
 def determine_connection_type(remote_url_unformatted):
     from urllib.parse import urlparse
     url = urlparse(remote_url_unformatted)
