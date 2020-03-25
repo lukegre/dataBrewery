@@ -1,0 +1,36 @@
+name: databrewery-dev
+channels:
+  - conda-forge
+dependencies:
+  - python=3.6
+  # IDE
+  - ipywidgets
+  - jupyterlab
+  - nb_conda_kernels # switch conda envs in jupyter
+  # Input/Output
+  - netcdf4
+  # Numerics
+  - numpy
+  - pandas=0.25.3
+  - scipy
+  - xarray
+  # Package Management
+  - asv
+  - black
+  - coveralls
+  - doc8
+  - flake8
+  - isort
+  - pre-commit
+  - pylint
+  - pytest
+  - pytest-cov
+  - pytest-sugar
+  # Visualization
+  - cartopy
+  - matplotlib
+  - nc-time-axis
+  - pip
+  - tqdm
+  - pip:
+      - pytest-tldr
