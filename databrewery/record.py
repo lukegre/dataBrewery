@@ -149,3 +149,26 @@ class Record:
 
         self._download_data(paths, njobs=njobs)
 
+    def local_files(self, dates):
+        from .utils import Path
+        paths = self._make_paths(
+            dates,
+            self.config['remote']['url'],
+            self.config['local_store'])
+
+        avail = []
+        download_pairs = []
+        for path_remote, path_local in paths:
+            if Path(path_local).is_file():
+                avail += path_local,
+            else:
+                download_pairs += (path_remote, path_local),
+
+        if download_pairs != []:
+
+            self._download_data(download_pairs)
+            return self.local_files(dates)
+        elif avail is []:
+            raise FileNotFoundError('No files returned for dates')
+        else:
+            return avail
