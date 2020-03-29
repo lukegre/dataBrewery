@@ -1,5 +1,3 @@
-from pathlib import Path as _Path_, _windows_flavour, _posix_flavour
-import os
 import pandas as pd
 import xarray as xr
 from warnings import warn
@@ -22,24 +20,36 @@ class PrettyPrinter(pprint.PrettyPrinter):
     def _format(self, object, *args, **kwargs):
         if isinstance(object, (str, Path)):
             object = str(object)
-            if len(object) > 80:
-                object = object[:80] + '...'
+            if len(object) > 70:
+                object = '...' + object[-70:]
         return pprint.PrettyPrinter._format(self, object, *args, **kwargs)
 
 
-class ObjectDict(object):
+class DictObject(object):
     def __init__(self, d):
-        self.__catalog__ = d
 
         for a, b in d.items():
             if isinstance(b, (list, tuple)):
-                setattr(self, a, [ObjectDict(x) if isinstance(x, dict) else x for x in b])
+                setattr(self, a, [DictObject(x) if isinstance(x, dict) else x for x in b])
             else:
-                setattr(self, a, ObjectDict(b) if isinstance(b, dict) else b)
+                setattr(self, a, DictObject(b) if isinstance(b, dict) else b)
 
     def __repr__(self):
-        pprinter = PrettyPrinter().pprint
-        return pprinter(self.__catalog__)
+        printer = PrettyPrinter().pformat
+        return printer(self.__dict__)
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            return self.__dict__[key]
+        else:
+            raise IndexError('The given index key type is not supported. '
+                             'Only string accepted')
+
+    def __iter__(self):
+        return self.__dict__.__iter__()
+
+    def __next__(self):
+        return self.__dict__.__next__()
 
 
 class DatePath(str):
@@ -56,8 +66,13 @@ class DatePath(str):
 
         elif isinstance(dates, pd.DatetimeIndex):
             filelist = [self[d] for d in dates]
+            uniquelist = []
+            for d in filelist:
+                if d not in uniquelist:
+                    uniquelist += d,
+            filelist = uniquelist
             if filelist == []:
-                warn("No files returned (check input range)", BrewWarning)
+                warn("No files returned (check input range)", UserWarning)
             return filelist
 
         else:
@@ -84,13 +99,19 @@ class URL(DatePath):
 class Path(DatePath):
 
     def __init__(self, string):
-        import pathlib
+        from pathlib import _windows_flavour, _posix_flavour, Path as _Path
+        import os
+
+        self._flavour = _windows_flavour if os.name == 'nt' else _posix_flavour
+
         path_funcs = ['parent', 'name', 'glob', 'exists',
                       'mkdir', 'is_dir', 'is_file']
 
         for func_name in path_funcs:
-            func = getattr(pathlib.Path(self).expanduser(), func_name)
+            func = getattr(_Path(self).expanduser(), func_name)
             setattr(self, func_name, func)
+
+        assert self.is_writable(), 'Given path is not writable'
 
     @property
     def globbed(self):
@@ -107,6 +128,22 @@ class Path(DatePath):
         else:
             return flist
 
+    def is_writable(self):
+        import pathlib
+        import os
+
+        path = pathlib.Path(self)
+        writable = os.access(path, os.W_OK)
+        parent = path.parent
+
+        if writable:
+            return True
+        elif not parent.is_mount():
+            parent = Path(parent)
+            result = parent.is_writable()
+        else:
+            return False
+        return result
 
 
 class NetCDFloader:
