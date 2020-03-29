@@ -30,7 +30,7 @@ class Catalog:
 
             dates = f"{barrel.date.start} : {barrel.date.end}"
             scheme = barrel.url.parsed.scheme.upper()
-            keywords = re.sub("[\'\(\)]", "", str(barrel.keywords))
+            keywords = re.sub(r"['()]", "", str(barrel.keywords))
             out += f"{key: <15}{dates}   {scheme: <8}{keywords}\n"
 
         out += "\nAccess all local paths via keywords through dataBrewery.MENU"
@@ -40,6 +40,7 @@ class Catalog:
 class VariableCollection:
     def __init__(self, craft_brewery, attr):
         from collections import defaultdict
+        from .utils import DictObject
 
         barrel_names = craft_brewery._config_dict.keys()
         barrels = [getattr(craft_brewery, k) for k in barrel_names]
@@ -51,7 +52,7 @@ class VariableCollection:
 
         self._kw = keywords
         for kw in keywords:
-            setattr(self, kw, ObjectDict(keywords[kw]))
+            setattr(self, kw, DictObject(keywords[kw]))
 
     def __repr__(self):
         out = ""

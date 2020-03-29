@@ -14,7 +14,8 @@ class Downloader:
     _cache_flist = []
     _cache_dir = ''
 
-    def __init__(self, host, verbose=2, username='anonymous', service=None, password=None, **kwargs):
+    def __init__(self, host, verbose=2, service=None,
+                 username='anonymous', password=None, **kwargs):
 
         if password is None:
             from keyring import get_password
@@ -142,7 +143,7 @@ class Downloader:
 
         # tries to open the path, if it fails, not valid, if it passes, valid
         try:
-            with opener(local_path) as obj:
+            with opener(local_path):
                 return True
         except error:
             return False
@@ -190,7 +191,7 @@ class FTP(Downloader):
         except error_temp:
             return []
         except BrokenPipeError:
-            raise error_temp('Server timeout. Try clossing and restarting the connection')
+            raise error_temp('Server timeout. Try restarting the connection')
         except error_reply:
             return []
 
@@ -209,7 +210,8 @@ class SFTP(Downloader):
 
         cnopts = pysftp.CnOpts()
         cnopts.hostkeys = None
-        sftp_options = dict(host=host, username=username, password=password, cnopts=cnopts)
+        sftp_options = dict(username=username, password=password,
+                            host=host, cnopts=cnopts)
         sftp_options.update(kwargs)
 
         self.sftp = pysftp.Connection(**sftp_options)
@@ -228,8 +230,7 @@ class SFTP(Downloader):
         with open(local, 'wb') as fd:
             with TqdmWrap(desc=pbar_desc, unit='b', unit_scale=True) as pbar:
                 def cb(data):
-                    l = len(data)
-                    pbar.update(l)
+                    pbar.update(len(data))
                     fd.write(data)
 
                 self.sftp.get(remote, local, callback=pbar.viewBar)
@@ -333,7 +334,9 @@ class CDS(Downloader):
         local is the path to a local directory
         """
         from pandas import Timestamp
-        assert isinstance(date, Timestamp), 'ERA5 input argument must be a pandas.Timestamp'
+
+        assert isinstance(date, Timestamp), (
+            'ERA5 input argument must be a pandas.Timestamp')
 
         slocal = shorten_path_for_print(local)
         if self.is_local_file_valid(local):
@@ -368,7 +371,7 @@ def shorten_path_for_print(path, maxlen=100):
     url = urlparse(path)
     out = ''
 
-    out += url.scheme + '://' if url.scheme is not '' else ''
+    out += url.scheme + '://' if url.scheme != '' else ''
     out += url.netloc
 
     out += '/'.join(url.path[:20].split('/')[:-1])

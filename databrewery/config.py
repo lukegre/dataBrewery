@@ -46,7 +46,8 @@ schema = Schema({
         'doi': And(validators.url, str, error='DOI must be a URL'),
         'variables': list,
         'remote': {'url': Use(URL),
-                   Optional('login'): {'username': str,
+                   Optional('login'): {
+                       'username': str,
                                        Or('service', 'password', only_one=True): str},
                    Optional('port'): int},
         'local_store': Use(Path),
