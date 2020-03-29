@@ -11,7 +11,7 @@ lsce_ffnnv1: # sea surface height
         login:  # uses local system keyring - more secure than typing password
             service: "CMEMS"  # the name of the web service
             username: "lgregor1"
-            password: ''  # recommend to use the keyring rather
+            # password: ''  # recommend to use the keyring rather
         port: 22001  # optional port number if using sftp
     # local_store is where data is cloned to - remote.url and local_store must result in the same number of files
     local_store: "/Users/luke/Desktop/pco2_denvilsommer/ffnn_v1/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}.nc"
