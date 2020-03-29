@@ -42,76 +42,64 @@ class ObjectDict(object):
         return pprinter(self.__catalog__)
 
 
-class Path(_Path_):
-    _flavour = _windows_flavour if os.name == 'nt' else _posix_flavour
-    @property
-    def str(self):
-        return self.expanduser().__str__()
+class DatePath(str):
 
-    def set_date(self, date):
-        if not date:
-            date = pd.Timestamp.today()
-        return self.format(t=date)
-
-    def format(self, *args, **kwargs):
-        path_fmt = self.str.format(*args, **kwargs)
-        return Path(path_fmt)
-
-    def _process_slice_to_date_range(self, slice_obj):
-        t0, t1, ts = slice_obj.start, slice_obj.stop, slice_obj.step
-
-        if t0 is None:
-            raise IndexError('You cannot have time slices that are none')
-        if t1 is None:
-            t1 = pd.Timestamp.today()
-        if ts is None:
-            ts = '1D'
-        if not isinstance(ts, str):
-            raise IndexError('The slice step must be a frequency string '
-                             'parsable by pd.Timestamp')
-
-        t0, t1 = [pd.Timestamp(str(t)) for t in [t0, t1]]
-        date_range = pd.date_range(t0, t1, freq=ts)
-
-        return date_range
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self})"
 
     def __getitem__(self, getter):
         acceptable = (pd.Timestamp, pd.DatetimeIndex)
+        dates = get_dates(getter)
 
-        # first try to convert string to Timestamp
-        if isinstance(getter, str):
-            getter = pd.Timestamp(getter)
+        if isinstance(dates, pd.Timestamp):
+            return self.format(t=dates)
 
-        if isinstance(getter, slice):
-            getter = self._process_slice_to_date_range(getter)
-
-        if isinstance(getter, pd.Timestamp):
-            return self.set_date(getter)
-
-        elif isinstance(getter, pd.DatetimeIndex):
-            filelist = [self[d].str for d in getter]  # if self[d].exists()]
+        elif isinstance(dates, pd.DatetimeIndex):
+            filelist = [self[d] for d in dates]
             if filelist == []:
                 warn("No files returned (check input range)", BrewWarning)
             return filelist
 
-        msg = (f"{type(getter)} not supported for dPath, only "
-               f"{[str(a).split('.')[-1][:-2] for a in acceptable]}."
-               ).replace("'", '')
-        raise TypeError(msg)
+        else:
+            msg = (f"{type(getter)} not supported for DatePath, only "
+                   f"{[str(a).split('.')[-1][:-2] for a in acceptable]}."
+                   ).replace("'", '')
+            raise TypeError(msg)
+
+    def format(self, *args, **kwargs):
+        path_fmt = self.__str__().format(*args, **kwargs)
+        return self.__class__(path_fmt)
 
     def today(self):
         return self[pd.Timestamp.today()]
 
+
+class URL(DatePath):
     @property
-    def str(self):
-        return str(self)
+    def parsed(self):
+        from urllib.parse import urlparse
+        return urlparse(str(self))
+
+
+class Path(DatePath):
+
+    def __init__(self, string):
+        import pathlib
+        path_funcs = ['parent', 'name', 'glob', 'exists',
+                      'mkdir', 'is_dir', 'is_file']
+
+        for func_name in path_funcs:
+            func = getattr(pathlib.Path(self).expanduser(), func_name)
+            setattr(self, func_name, func)
 
     @property
     def globbed(self):
-        parent = self.parent
-        child = self.name
+        import pathlib
+        path = pathlib.Path(self).expanduser()
+        parent = path.parent
+        child = path.name
         globbed = parent.glob(str(child))
-        flist = list(globbed)
+        flist = [Path(f) for f in globbed]
         if flist is []:
             return None
         elif len(flist) == 1:
@@ -119,40 +107,6 @@ class Path(_Path_):
         else:
             return flist
 
-    @property
-    def parsed(self):
-        from urllib.parse import urlparse
-        return urlparse(self.str)
-
-
-class URL(str):
-    def __getitem__(self, getter):
-        acceptable = (pd.Timestamp, pd.DatetimeIndex,)
-
-        if isinstance(getter, pd.Timestamp):
-            return self.format(t=getter)
-
-        elif isinstance(getter, pd.DatetimeIndex):
-            return [self[d] for d in getter]
-
-        elif isinstance(getter, slice):
-            return self.__str__()[getter]
-
-        msg = f"{type(getter)} not supported for URL, only {acceptable}."
-        raise TypeError(msg)
-
-    def today(self):
-        return self[pd.Timestamp.today()]
-
-    def year(self, year):
-        from numpy import unique
-        dates = pd.date_range(f"{year}-01-01", f"{year}-12-31")
-        return unique(self[dates])
-
-    @property
-    def parsed(self):
-        from urllib.parse import urlparse
-        return urlparse(self)
 
 
 class NetCDFloader:
@@ -248,3 +202,41 @@ class DummyNetCDF:
 
     def __getitem__(self, key):
         return DummyNetCDF()
+
+
+def get_dates(date_like):
+    from pandas import Timestamp, DatetimeIndex
+
+    if isinstance(date_like, (Timestamp, DatetimeIndex)):
+        dates = date_like
+    elif isinstance(date_like, str):
+        dates = Timestamp(date_like)
+    elif isinstance(date_like, slice):
+        dates = slice_to_date_range(date_like)
+    elif isinstance(date_like, (list, tuple, set)):
+        dates = pd.DatetimeIndex([get_dates(d) for d in date_like])
+    else:
+        raise ValueError('Something is wrong with the date input. Must be '
+                         'str(YYYY-MM-DD) or Timestamp or DatetimeIndex')
+
+    return dates
+
+
+def slice_to_date_range(slice_obj):
+    import pandas as pd
+    t0, t1, ts = slice_obj.start, slice_obj.stop, slice_obj.step
+
+    if t0 is None:
+        raise IndexError('You cannot have time slices that are none')
+    if t1 is None:
+        t1 = pd.Timestamp.today()
+    if ts is None:
+        ts = '1D'
+    if not isinstance(ts, str):
+        raise IndexError('The slice step must be a frequency string '
+                         'parsable by pd.Timestamp')
+
+    t0, t1 = [pd.Timestamp(str(t)) for t in [t0, t1]]
+    date_range = pd.date_range(t0, t1, freq=ts)
+
+    return date_range
