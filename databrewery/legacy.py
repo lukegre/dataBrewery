@@ -1,3 +1,7 @@
+"""
+Will eventually be deleted
+"""
+
 
 def url_exists(uri: str) -> bool:
     import requests
@@ -340,6 +344,7 @@ def is_local_file_valid(local_path):
             return True
     except error:
         return False
+
 class NetCDFloader:
     """
     A class that loads netCDF data for a given date, but will
