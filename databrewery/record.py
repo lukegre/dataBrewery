@@ -172,3 +172,38 @@ class Record:
             raise FileNotFoundError('No files returned for dates')
         else:
             return avail
+
+
+class PipeFiles:
+    def __init__(self, name, parent, pipe_dict):
+        self._parent = parent
+        self._funcs = pipe_dict['functions']
+        self._data_path = pipe_dict['data_path']
+
+    def _get_file_opener(self, name):
+        if name.endswith('.nc'):
+            from xarray import open_dataset
+            return open_dataset
+        else:
+            return open
+
+    def _get_file_closer(self, obj):
+        from xarray import Dataset, DataArray
+        from pandas import Series, DataFrame
+
+        if isinstance(obj, (Dataset, DataArray)):
+            return lambda s: obj.to_netcdf(s)
+        elif isinstance(obj, (DataFrame, Series)):
+            return lambda s: obj.to_hdf(s, key='main')
+
+    def _pipeline(self, file_pairs):
+        from . import preprpocess as prep
+
+        for file_raw, file_process in file_pairs:
+            opener = self._get_file_opener(file_raw)
+
+            pipeline = [opener] + self._funcs
+            processed = prep.apply_process_pipeline(file_raw, pipeline)
+            closer = self._get_file_closer(processed)
+            closer(file_process)
+        
