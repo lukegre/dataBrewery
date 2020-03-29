@@ -1,5 +1,4 @@
 import pandas as pd
-import xarray as xr
 from warnings import warn
 import pprint
 
@@ -30,7 +29,9 @@ class DictObject(object):
 
         for a, b in d.items():
             if isinstance(b, (list, tuple)):
-                setattr(self, a, [DictObject(x) if isinstance(x, dict) else x for x in b])
+                setattr(self, a, [DictObject(x)
+                                  if isinstance(x, dict)
+                                  else x for x in b])
             else:
                 setattr(self, a, DictObject(b) if isinstance(b, dict) else b)
 
@@ -144,101 +145,6 @@ class Path(DatePath):
         else:
             return False
         return result
-
-
-class NetCDFloader:
-    """
-    A class that loads netCDF data for a given date, but will
-    not load the data if already loaded.
-    Takes a DataBrew.Path object and a set of functions can be applied
-    to the loaded netCDF.
-    """
-    def __init__(self, db_name, prep_funcs=[], varlist=[],
-                 decode_times=True, verbose=1):
-        self.name = db_name
-        self.data = None
-        self.file = ''
-        self.prep_funcs = prep_funcs
-        self.varlist = varlist
-        self.decode_times = decode_times
-        self.verbose = verbose
-
-    def get_data(self, time, raise_error=True):
-        fname = self._get_nearest_fname(time)
-        if fname is None:
-            return DummyNetCDF()
-        if fname != self.file:
-            if self.verbose == 1:
-                print('.', end='')
-            elif self.verbose == 2:
-                print(f'Loading: {fname}')
-            self.file = fname
-            self.data = self._load_netcdf(fname, time=time)
-        return self.data
-
-    def _get_nearest_fname(self, time, max_dist_time=5):
-        fname = self.name.set_date(time)
-        dt = 1
-
-        if '*' in str(fname):
-            from glob import glob
-            flist = glob(str(fname))
-            return flist
-
-        while (not fname.exists()) & (dt <= max_dist_time):
-            fname = self.name.set_date(time + pd.Timedelta(f'{dt}D'))
-            if fname.exists():
-                continue
-            else:
-                fname = self.name.set_date(time - pd.Timedelta(f'{dt}D'))
-            dt += 1
-
-        if not fname.exists():
-            return None
-
-        return fname
-
-    def _load_netcdf(self, fname, time=None):
-        from xarray import open_dataset
-        if not isinstance(fname, (list, str)):
-            fname = str(fname)
-
-        xds = xr.open_mfdataset(fname,
-                                decode_times=self.decode_times,
-                                combine='nested',
-                                concat_dim='time',
-                                parallel=True)
-        if self.varlist:
-            var_key = self.varlist
-        else:
-            var_key = list(xds.data_vars.keys())
-        xds = xds[var_key]
-
-        if (time is not None) and ('time' in xds.dims):
-            if isinstance(time, (int, float)):
-                xds = xds.isel(time=time).drop('time')
-            else:
-                xds = xds.mean('time')
-
-        if self.prep_funcs:
-            xds = self._apply_process_pipeline(xds, self.prep_funcs)
-
-        return xds.load()
-
-    def _apply_process_pipeline(self, xds, pipe):
-        xds.load()
-        for func in pipe:
-            xds = func(xds)
-
-        return xds
-
-
-class DummyNetCDF:
-    def sel_points(self, *args, **kwargs):
-        return pd.Series([None])
-
-    def __getitem__(self, key):
-        return DummyNetCDF()
 
 
 def get_dates(date_like):
