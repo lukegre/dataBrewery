@@ -29,6 +29,8 @@ def validate_catalog(catalog_dict):
         record = catalog_dict[key]
         validated_catalog[key] = schema.validate(record)
 
+    # TODO: check remote.url/local_store/pipeline.data_path for number of files
+
     return validated_catalog
 
 
@@ -48,7 +50,7 @@ schema = Schema({
         'remote': {'url': Use(URL),
                    Optional('login'): {
                        'username': str,
-                                       Or('service', 'password', only_one=True): str},
+                       Or('service', 'password', only_one=True): str},
                    Optional('port'): int},
         'local_store': Use(Path),
         Optional('pipelines'): {str: {'data_path': Use(Path),

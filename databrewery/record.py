@@ -13,6 +13,11 @@ class Record:
 
         self.config = DictObject(config_dict)
 
+        if hasattr(self.config, 'pipelines'):
+            for key in self.config.pipelines:
+                pipe = PipeFiles(key, self, self.config.pipelines[key])
+                setattr(self, key, pipe)
+
     def __str__(self):
         name = self.name.upper()
         blank = ' '*2
@@ -66,17 +71,18 @@ class Record:
 
     def _download_multiple_processes(self, remote_local_files, njobs):
         from multiprocessing import Process, Queue
+        # TODO: Currently broken. Will be better to use joblib
 
         paths = remote_local_files
         verbose = self.verbose
         verbose = 1 if verbose == 2 else verbose
 
-        step = paths.shape[0] // njobs
+        # step = paths.shape[0] // njobs
         processes = []
         split_paths = []
         for i in range(njobs):
-            i0 = i * step
-            i1 = (i+1) * step
+            # i0 = i * step
+            # i1 = (i+1) * step
             # split_paths += paths[i0:i1],
             split_paths += paths[i:njobs],
 
@@ -84,10 +90,11 @@ class Record:
         queue = Queue()
         for i in range(njobs):
             p = Process(target=self._download_single_process,
-                        args=(split_paths[i], queue, 1))
+                        args=(split_paths[i]))
             processes += p,
             p.start()
 
+        # FIXME single download no longer returns to queue
         missing_files = []
         for p in processes:
             missing_files += queue.get()
@@ -131,10 +138,13 @@ class Record:
         ncpus = cpu_count() - 1
         njobs = ncpus if njobs > ncpus else njobs
 
-        self._print(f'Downloading {file_pairs.shape[0]} {self.name} files with {njobs} jobs')
+        self._print(f'Downloading {file_pairs.shape[0]} '
+                    f'{self.name} files with {njobs} jobs')
 
         if njobs == 1:
             out = self._download_single_process(file_pairs)
+
+        # TODO: parallel downloads are currently broken. Could improve
         if njobs > 1:
             out = self._download_multiple_processes(file_pairs, njobs)
 
@@ -165,9 +175,13 @@ class Record:
                 download_pairs += (path_remote, path_local),
 
         if download_pairs != []:
-
-            self._download_data(download_pairs)
-            return self.local_files(dates)
+            n = len(download_pairs)
+            choice = input(f'{n} missing files to download. Continue [y/n]: ')
+            if choice.lower().startswith('y'):
+                self._download_data(download_pairs)
+                return self.local_files(dates)
+            else:
+                return avail
         elif avail is []:
             raise FileNotFoundError('No files returned for dates')
         else:
@@ -179,6 +193,21 @@ class PipeFiles:
         self._parent = parent
         self._funcs = pipe_dict['functions']
         self._data_path = pipe_dict['data_path']
+
+    def __call__(self, dates):
+        """
+        Gets the file names for the given date range.
+        If not present, downloads the files.
+        """
+        paths = self._parent._make_paths(
+            dates,
+            self._parent.config.remote.url,
+            self._parent.config.local_store,
+            self._data_path)
+
+        # TODO: find missing files for pipe and local_store
+
+        return paths
 
     def _get_file_opener(self, name):
         if name.endswith('.nc'):
@@ -206,4 +235,3 @@ class PipeFiles:
             processed = prep.apply_process_pipeline(file_raw, pipeline)
             closer = self._get_file_closer(processed)
             closer(file_process)
-        
