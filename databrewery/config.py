@@ -1,63 +1,62 @@
-from os import path as _path
+from importlib import import_module
+import validators
+from schema import Schema, Optional, And, Use, Or
+from . utils import Path, URL
 
 
-path = _path.join(_path.expanduser('~'), '.dataBrewery.yaml')
+def get_modules_from_list(list_of_module_names):
+    def get_module_from_string(module_name_str):
+
+        mod = import_module(module_name_str.split('.')[0])
+
+        for sub in module_name_str.split('.')[1:]:
+            if hasattr(mod, sub):
+                mod = getattr(mod, sub)
+            else:
+                raise ImportError(f'`{module_name_str}` does not exist')
+        return mod
+
+    modules = []
+    for name in list_of_module_names:
+        modules += get_module_from_string(name),
+
+    return modules
 
 
-def read_config_as_dict(filepath):
-    from yaml import safe_load
-    from collections import defaultdict
+def validate_catalog(catalog_dict):
+    validated_catalog = {}
+    for key in catalog_dict:
+        record = catalog_dict[key]
+        validated_catalog[key] = schema.validate(record)
 
-    file = open(filepath)
-    config_dict = safe_load(file)
+    # TODO: check remote.url/local_store/pipeline.data_path for number of files
 
-    return defaultdict(defaultdict, config_dict)
+    return validated_catalog
 
 
-class dataBreweryConfig:
+def read_catalog(catalog_fname):
+    import yaml
 
-    def __init__(self, config_file_path=path):
-        from .utils import Object
-        import os
+    catalog_dict = yaml.full_load(open(catalog_fname))
+    validated = validate_catalog(catalog_dict)
 
-        config_dict = self._read_config_as_dict(config_file_path)
+    return validated
 
-        self.filepath = os.path.realpath(config_file_path)
-        self.sources = Object(config_dict)
-        self.keyword = self._generate_keyword_obj(config_dict)
 
-    def __repr__(self):
-        txt = f"dataBreweryConfig ({self.filepath})\n"
-        txt += "=" * (len(txt)-1)
-        txt += self.sources.__repr__()
-        return txt
+schema = Schema({
+        'description': str,
+        'doi': And(validators.url, str, error='DOI must be a URL'),
+        'variables': list,
+        'remote': {'url': Use(URL),
+                   Optional('login'): {
+                       'username': str,
+                       Or('service', 'password', only_one=True): str},
+                   Optional('port'): int},
+        'local_store': Use(Path),
+        Optional('pipelines'): {str: {'data_path': Use(Path),
+                                      'functions': Use(get_modules_from_list)}}
+        })
 
-    @staticmethod
-    def _read_config_as_dict(filepath):
-        from yaml import safe_load
 
-        file = open(filepath)
-        config_dict = safe_load(file)
-
-        return config_dict
-
-    @staticmethod
-    def _generate_keyword_obj(config_dict):
-        from .utils.core import Object
-
-        def generate_keyword_dict(config_dict):
-            from collections import defaultdict
-            keywords = defaultdict(list)
-            for source in config_dict:
-                kw = config_dict[source].get('keywords', [])
-                for key in kw:
-                    keywords[key] += source,
-            return keywords
-
-        keyword_dict = generate_keyword_dict(config_dict)
-        keyword_obj = {}
-        for kw in keyword_dict:
-            keyword_obj[kw] = {}
-            for src in keyword_dict[kw]:
-                keyword_obj[kw][src] = config_dict[src]
-        return Object(keyword_obj)
+if __name__ == "__main__":
+    pass

@@ -1,0 +1,23 @@
+lsce_ffnnv1: # sea surface height
+    # description tells the user about the product
+    description: "LSCE-FFNN-v1: a two-step neural network model for the reconstruction of surface ocean pCO2 over the global ocean"
+    doi: "https://doi.org/10.5194/gmd-12-2091-2019"  # must add doi for user 
+    variables:  # makes it easier for the user to find the data they want
+        - pco2
+        - ph
+    remote:
+        # URL is where the data is downloaded from. 
+        url: "ftp://my.cmems-du.eu/Core/MULTIOBS_GLO_BIO_REP_015_005/dataset-carbon-rep-monthly/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}*.nc"
+        login:  # uses local system keyring - more secure than typing password
+            service: "CMEMS"  # the name of the web service
+            username: "lgregor1"
+            # password: ''  # recommend to use the keyring rather
+        port: 22001  # optional port number if using sftp
+    # local_store is where data is cloned to - remote.url and local_store must result in the same number of files
+    local_store: "/Users/luke/Desktop/pco2_denvilsommer/ffnn_v1/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}.nc"
+    pipelines:  # this tells the brewery that you want to have a processed pipeline
+        mon_1deg:  # this is the name of the pipeline - this is NB
+            data_path: "/Users/luke/Desktop/data/mon_1deg/lsce_ffnnv1/{t:%Y}/lsce_ffnnv1_mon_1deg_{t:%Y%m}.nc"
+            functions:  # functions that will be applied to the pipeline xds --> xds
+                - databrewery.preprocess.rename_to_latlon
+                - databrewery.preprocess.center_coords_at_0

@@ -5,10 +5,30 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 
 class Downloader:
-    verbose = 2
-    missing_files = []
+    """
+    verbosity levels
+        0: doesnt print anything
+        1: prints minimal - commands only
+        2: prints line by line commands and live progress of downloads
+    """
     _cache_flist = []
     _cache_dir = ''
+
+    def __init__(self, host, verbose=2, service=None,
+                 username='anonymous', password=None, **kwargs):
+
+        if password is None:
+            from keyring import get_password
+            password = get_password(service, username)
+
+        self._check_host_valid(host)
+        self.verbose = verbose
+
+        self._method_init(host, username, password, **kwargs)
+
+    def _method_init(self, host, username, password, **kwargs):
+        # placehoder method for individual methods
+        pass
 
     def _check_host_valid(self, host):
         import re
@@ -26,26 +46,27 @@ class Downloader:
         pass
 
     def download_file(self, remote, local):
+
+        slocal = shorten_path_for_print(local)
         if self.is_local_file_valid(local):
-            self.qprint('File exists locally:', shorten_path_for_print(local))
-            return None
+            self._print(f'File exists locally: {slocal}', lvl=2)
+            return 2
 
         remote = self.get_remote_pathname_match(remote)
         if remote is None:
-            return None
+            return 1
 
         # making local directory
         local_dir = os.path.split(local)[0]
         os.makedirs(local_dir, exist_ok=True, mode=511)
 
-        short_local_path = self.shorten_path_for_print(local, 100)
-        description = f'Downloading {short_local_path}'
-        if int(self.verbose) > 1:
+        description = f'Downloading {slocal}'
+        if int(self.verbose) >= 2:
             self._vdownload(remote, local, description)
-
         else:
-            self.qprint(description)
+            self._print(description, lvl=1)
             self._qdownload(remote, local)
+        return 0
 
     def get_remote_pathname_match(self, remote_path):
         """
@@ -56,6 +77,7 @@ class Downloader:
         from fnmatch import fnmatch
         import os
 
+        sremote = shorten_path_for_print(remote_path)
         url = urlparse(remote_path)
 
         # get the remote_directory
@@ -67,9 +89,8 @@ class Downloader:
             self._cache_flist = self.listdir(remote_directory)
 
         if self._cache_flist == []:
-            self.qprint(f'Remote file does not exist: {remote_directory}')
-            self.missing_files += remote_path,
-            return
+            self._print(f'URL does not exist: {remote_directory}', lvl=3)
+            return None
 
         # returns matches for *? [0-9A-Z]
         file_match = [f for f in self._cache_flist if fnmatch(f, remote_path)]
@@ -82,49 +103,27 @@ class Downloader:
         if num_matches > 1:
             msg = (f"URL returns {num_matches} matches: {remote_path}\n"
                    f"{file_match}\n\nThe URL must only return one file. "
-                    "* is only for changing elements in a file")
+                   f"* is only for changing elements in a file")
         if num_matches < 1:
-            msg = (f"Remote file does not exist: " +
-                   self.shorten_path_for_print(remote_path, 100))
+            msg = f"Remote file does not exist: {sremote}"
 
-        self.qprint(msg)
-        self.missing_files += remote_path,
+        self._print(msg, lvl=3)
 
         return None
 
     def listdir(self, path):
         return [path]
 
-    def qprint(self, *msg):
-        if self.verbose == 1:
-            print(*msg)
-
-    def vprint(self, *msg):
-        if self.verbose > 1:
+    def _print(self, *msg, lvl=1):
+        """
+        process printer where verbosity is defined by set level
+        the run verbosity is taken from self.verbose
+        """
+        if self.verbose >= lvl:
             print(*msg)
 
     def close_connection(self):
         pass
-
-    @staticmethod
-    def shorten_path_for_print(path, maxlen=100):
-        if len(path) <= maxlen:
-            return path
-
-        from urllib.parse import urlparse
-        url = urlparse(path)
-        out = ''
-
-        out += url.scheme + '://' if url.scheme is not '' else ''
-        out += url.netloc
-
-        out += '/'.join(url.path[:15].split('/')[:-1])
-        out += '/.../'
-        length_remaining = maxlen - len(out)
-        end_of_path_ugly = url.path[-length_remaining:]
-        out += '/'.join(end_of_path_ugly.split('/')[1:])
-
-        return out
 
     @staticmethod
     def is_local_file_valid(local_path):
@@ -141,26 +140,26 @@ class Downloader:
         else:
             error = BaseException
             opener = open  # dummy opener
-            
+
         # tries to open the path, if it fails, not valid, if it passes, valid
         try:
-            with opener(local_path) as obj:
+            with opener(local_path):
                 return True
         except error:
             return False
 
 
 class FTP(Downloader):
-    def __init__(self, host, verbose=2, username=None, password=None, **kwargs):
+    """
+    creates a connection under `self.ftp`
+    this connection can be closed
+    """
+
+    def _method_init(self, host, username, password, **kwargs):
         import ftplib
 
-        username = "anonymous" if username is None else username
-        password = "" if password is None else password
-
-        self._check_host_valid(host)
         self.ftp = ftplib.FTP(host)
         self.ftp.login(username, password)
-        self.verbose = verbose
 
     def _vdownload(self, remote, local, pbar_desc):
         from tqdm import tqdm
@@ -172,8 +171,7 @@ class FTP(Downloader):
             size = self.get_file_size(remote)
             with tqdm(total=size, desc=pbar_desc, unit='B', unit_scale=True) as pbar:
                 def cb(data):
-                    l = len(data)
-                    pbar.update(l)
+                    pbar.update(len(data))
                     fd.write(data)
                 self.ftp.retrbinary('RETR {}'.format(remote), cb)
 
@@ -193,7 +191,7 @@ class FTP(Downloader):
         except error_temp:
             return []
         except BrokenPipeError:
-            raise error_temp('Server timeout. Try clossing and restarting the connection')
+            raise error_temp('Server timeout. Try restarting the connection')
         except error_reply:
             return []
 
@@ -206,18 +204,17 @@ class FTP(Downloader):
 
 
 class SFTP(Downloader):
-    def __init__(self, host, verbose=2, username=None, password=None, **kwargs):
-        import pysftp
 
-        self._check_host_valid(host)
+    def _method_init(self, host, username, password, **kwargs):
+        import pysftp
 
         cnopts = pysftp.CnOpts()
         cnopts.hostkeys = None
-        sftp_options = dict(host=host, username=username, password=password, cnopts=cnopts)
+        sftp_options = dict(username=username, password=password,
+                            host=host, cnopts=cnopts)
         sftp_options.update(kwargs)
 
         self.sftp = pysftp.Connection(**sftp_options)
-        self.verbose = verbose
 
     def _vdownload(self, remote, local, pbar_desc):
         from tqdm import tqdm
@@ -233,8 +230,7 @@ class SFTP(Downloader):
         with open(local, 'wb') as fd:
             with TqdmWrap(desc=pbar_desc, unit='b', unit_scale=True) as pbar:
                 def cb(data):
-                    l = len(data)
-                    pbar.update(l)
+                    pbar.update(len(data))
                     fd.write(data)
 
                 self.sftp.get(remote, local, callback=pbar.viewBar)
@@ -265,10 +261,10 @@ class SFTP(Downloader):
 
 
 class HTTP(Downloader):
-    def __init__(self, *args, verbose=2, username=None, password=None, **kwargs):
+
+    def _method_init(self, host, username, password, **kwargs):
         from requests.auth import HTTPBasicAuth
 
-        self.verbose = verbose
         self.auth = HTTPBasicAuth(username, password)
 
     def _vdownload(self, remote, local, pbar_desc):
@@ -277,7 +273,7 @@ class HTTP(Downloader):
 
         req = requests.get(remote, auth=self.auth, stream=True)
         if not req.ok:
-            self.vprint(f"URL does not exist: {remote}")
+            self._print(f"URL does not exist: {remote}", lvl=2)
             return False
 
         step = 5 * 2**10
@@ -294,7 +290,7 @@ class HTTP(Downloader):
 
         req = requests.get(remote, auth=self.auth, stream=True)
         if not req.ok:
-            self.vprint(f"URL does not exist: {remote}")
+            self._print(f"URL does not exist: {remote}", lvl=2)
             return False
 
         step = 5 * 2**10
@@ -307,7 +303,8 @@ class HTTP(Downloader):
 
 
 class CDS(Downloader):
-    def __init__(self, *args, **cdsapi_client_kwargs):
+
+    def _method_init(self, host, username, password, **cdsapi_client_kwargs):
         import cdsapi
         self.cds = cdsapi.Client(**cdsapi_client_kwargs)
 
@@ -337,11 +334,14 @@ class CDS(Downloader):
         local is the path to a local directory
         """
         from pandas import Timestamp
-        assert isinstance(date, Timestamp), 'ERA5 input argument must be a pandas.Timestamp'
 
+        assert isinstance(date, Timestamp), (
+            'ERA5 input argument must be a pandas.Timestamp')
+
+        slocal = shorten_path_for_print(local)
         if self.is_local_file_valid(local):
-            self.vprint('File exists locally:', self.shorten_path_for_print(local))
-            return None
+            self._print('File exists locally:', slocal, lvl=2)
+            return 2
 
         # making local directory
         local_dir = os.path.split(local)[0]
@@ -360,6 +360,7 @@ class CDS(Downloader):
                 'time': self.times,
             },
             local)
+        return 0
 
 
 def shorten_path_for_print(path, maxlen=100):
@@ -370,7 +371,7 @@ def shorten_path_for_print(path, maxlen=100):
     url = urlparse(path)
     out = ''
 
-    out += url.scheme + '://' if url.scheme is not '' else ''
+    out += url.scheme + '://' if url.scheme != '' else ''
     out += url.netloc
 
     out += '/'.join(url.path[:20].split('/')[:-1])
@@ -382,58 +383,24 @@ def shorten_path_for_print(path, maxlen=100):
     return out
 
 
-def unzip(zip_path, dest_dir=None):
-
-    from zipfile import ZipFile
-
-    if not os.path.isfile(zip_path):
-        raise OSError(f'The zip file does not exist: {zip_path}')
-
-    if dest_dir is None:
-        dest_dir = os.path.split(zip_path)[0]
-
-    with ZipFile(zip_path, 'r') as zip:
-        flist_zip = set(zip.namelist())
-        flist_dir = set(os.listdir(dest_dir))
-
-        files_to_extract = list(flist_zip - flist_dir)
-
-        if files_to_extract == []:
-            print(f'All files in {zip_path} exist in {dest_dir}')
-
-        zip.extractall(path=dest_dir, members=files_to_extract)
-
-
-def gunzip(zip_path, dest_path=None):
-    import shutil
-    import gzip
-
-    if dest_path is None:
-        dest_path = zip_path.replace('.gz', '')
-
-    with gzip.open(zip_path, 'rb') as f_in:
-        with open(dest_path, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-            return f_out
-
-
 def determine_connection_type(remote_url_unformatted):
     from urllib.parse import urlparse
-    url = urlparse(remote_url_unformatted)
+    url = urlparse(str(remote_url_unformatted))
 
     if url.scheme == '':
         raise BaseException('No connection scheme for URL, need '
                             'this to determine the connection type')
 
     downloader_dict = {'sftp':  SFTP,
-                      'http':  HTTP,
-                      'https': HTTP,
-                      'ftp':   FTP,
-                      'cds':   CDS,
-                      }
+                       'http':  HTTP,
+                       'https': HTTP,
+                       'ftp':   FTP,
+                       'cds':   CDS,
+                       }
 
     downloader = downloader_dict.get(url.scheme, None)
     if downloader is None:
-        raise BaseException(f'The URL scheme ({url.scheme}) does not exist in dataBrewery config')
+        raise BaseException(f'The URL scheme ({url.scheme}) does '
+                            'not exist in dataBrewery config')
 
     return downloader
