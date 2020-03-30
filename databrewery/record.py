@@ -44,6 +44,14 @@ class Record:
             print(*msg)
 
     def _initiate_connection(self):
+        """
+        Function makes a connection to the server. This is done per download
+        thread and NOT per file. This approach is quicker. The host type and
+        download protocol is also determined here.
+
+        Returns a downloader object that can then download specified files
+        from the server
+        """
         from .download import determine_connection_type
 
         url = self.config['remote']['url']
@@ -58,30 +66,53 @@ class Record:
         return connect
 
     def _download_single_process(self, remote_local_files):
+        """
+        Downloads files on a single process using a db.Downloader instance.
+
+        Parameters
+        ----------
+        remote_local_files: list
+            a list of file pairs, where each pair is the remote and local
+            save paths to the files.
+
+        Returns
+        -------
+        download_status: dict
+            a dictionary with files assigned to the following categories:
+            - downloaded
+            - remote_not_exist
+            - local_exists
+        """
         import os
         from warnings import warn
         downloader = self._initiate_connection()
         downloader.verbose = self.verbose
 
-        msg_decipher = {0: 'downloaded',
-                        1: 'remote_not_exist',
-                        2: 'local_exists'}
-        outmsg = {k: [] for k in msg_decipher.values()}
+        msg_decipher = {
+            0: 'downloaded', 1: 'remote_not_exist', 2: 'local_exists'}
+        download_status = {k: [] for k in msg_decipher.values()}
         for remote, local in remote_local_files:
+            # download_file returns a code that is described by the
+            # msg_decipher codes above
             try:
                 msg = downloader.download_file(remote, local)
-                outmsg[msg_decipher[msg]] += remote,
-            except (Exception, KeyboardInterrupt) as e:
+                download_status[msg_decipher[msg]] += remote,
+            except (Exception, KeyboardInterrupt) as error:
+                # catches any exception so that file is deleted if incomplete
                 if os.path.isfile(local):
                     os.remove(local)
                     warn('\n\n' + '#' * 40 +
                          f'\nRemoved partially downloaded file {local}\n'
                          + '#' * 40 + '\n')
-                raise e
+                # downloader connection closed to avoid too many connections
+                downloader.close_connection()
+                # raises caught error at the end
+                raise error
 
+        # close connection at the end of the downloading
         downloader.close_connection()
 
-        return outmsg
+        return download_status
 
     def _download_multiple_processes(self, remote_local_files, njobs):
         from multiprocessing import Process, Queue
