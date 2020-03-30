@@ -15,11 +15,14 @@ class Downloader:
     _cache_dir = ''
 
     def __init__(self, host, verbose=2, service=None,
-                 username='anonymous', password=None, **kwargs):
+                 username=None, password=None, **kwargs):
 
-        if password is None:
+        if (password is None) & (username is not None):
             from keyring import get_password
             password = get_password(service, username)
+        elif username is None:
+            username = 'anonymous'
+            password = ''
 
         self._check_host_valid(host)
         self.verbose = verbose
@@ -62,11 +65,11 @@ class Downloader:
 
         description = f'Downloading {slocal}'
         if int(self.verbose) >= 2:
-            self._vdownload(remote, local, description)
+            out = self._vdownload(remote, local, description)
         else:
             self._print(description, lvl=1)
-            self._qdownload(remote, local)
-        return 0
+            out = self._qdownload(remote, local)
+        return out
 
     def get_remote_pathname_match(self, remote_path):
         """
@@ -174,12 +177,14 @@ class FTP(Downloader):
                     pbar.update(len(data))
                     fd.write(data)
                 self.ftp.retrbinary('RETR {}'.format(remote), cb)
+        return 0
 
     def _qdownload(self, remote, local):
         from urllib.parse import urlparse
         remote = urlparse(remote).path
         with open(local, 'wb') as fd:
             self.ftp.retrbinary('RETR {}'.format(remote), fd.write)
+        return 0
 
     def listdir(self, directory='.'):
         """Will always list the directory, even if a file is given"""
@@ -234,6 +239,7 @@ class SFTP(Downloader):
                     fd.write(data)
 
                 self.sftp.get(remote, local, callback=pbar.viewBar)
+        return 0
 
     def _qdownload(self, remote, local):
         from urllib.parse import urlparse
@@ -241,6 +247,7 @@ class SFTP(Downloader):
         with open(local, 'wb') as fd:
             self.sftp.get(remote, local)
             return
+        return 0
 
     def listdir(self, directory=''):
         """Will always list the directory, even if a file is given"""
@@ -274,7 +281,7 @@ class HTTP(Downloader):
         req = requests.get(remote, auth=self.auth, stream=True)
         if not req.ok:
             self._print(f"URL does not exist: {remote}", lvl=2)
-            return False
+            return 1
 
         step = 5 * 2**10
         size = int(req.headers.get('content-length', 0))
@@ -284,6 +291,7 @@ class HTTP(Downloader):
                 pbar.update(len(data))
                 f.write(data)
         pbar.close()
+        return 0
 
     def _qdownload(self, remote, local):
         import requests
@@ -291,12 +299,13 @@ class HTTP(Downloader):
         req = requests.get(remote, auth=self.auth, stream=True)
         if not req.ok:
             self._print(f"URL does not exist: {remote}", lvl=2)
-            return False
+            return 1
 
         step = 5 * 2**10
         with open(local, 'wb') as f:
             for data in req.iter_content(step):
                 f.write(data)
+        return 0
 
     def get_remote_pathname_match(self, remote_path):
         return remote_path
