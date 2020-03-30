@@ -183,3 +183,26 @@ def slice_to_date_range(slice_obj):
     date_range = pd.date_range(t0, t1, freq=ts)
 
     return date_range
+
+
+def is_file_valid(local_path):
+    from os.path import isfile
+    if not isfile(local_path):
+        return False
+
+    # has an opener been passed, if not assumes file is valid
+    if local_path.endswith('.nc'):
+        from netCDF4 import Dataset as opener
+        error = OSError
+    elif local_path.endswith('.zip'):
+        from zipfile import ZipFile as opener, BadZipFile as error
+    else:
+        error = BaseException
+        def opener(p): return None  # dummy opener
+
+    # tries to open the path, if it fails, not valid, if it passes, valid
+    try:
+        with opener(local_path):
+            return True
+    except error:
+        return False
