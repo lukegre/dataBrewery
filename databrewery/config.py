@@ -4,6 +4,10 @@ from schema import Schema, Optional, And, Use, Or
 from . utils import Path, URL
 
 
+class ConfigError(BaseException):
+    pass
+
+
 def get_modules_from_list(list_of_module_names):
     def get_module_from_string(module_name_str):
 
@@ -23,13 +27,41 @@ def get_modules_from_list(list_of_module_names):
     return modules
 
 
+def check_datepaths(record):
+    from .record import Record
+    import pandas as pd
+
+    random_dates = pd.DatetimeIndex(['2010-04-03', '2010-03-23',
+                                     '2014-01-01', '2014-01-02'])
+
+    paths = [record['remote']['url'],
+             record['local_store']]
+
+    if 'pipelines' in record:
+        for key in record['pipelines']:
+            pipe = record['pipelines'][key]
+            paths += pipe['data_path'],
+    try:
+        Record._make_paths(random_dates, *paths)
+    except AssertionError:
+        raise ConfigError(
+            'The given paths in the config file do not produce '
+            'the same number of output files; e.g. there may be '
+            'more URLs than LOCAL_PATHSs. Please check the date '
+            'formatting of the following paths: \n'
+            + '\n'.join(paths)
+        )
+
+
 def validate_catalog(catalog_dict):
+
     validated_catalog = {}
     for key in catalog_dict:
         record = catalog_dict[key]
-        validated_catalog[key] = schema.validate(record)
+        valid_record = schema.validate(record)
+        validated_catalog[key] = valid_record
 
-    # TODO: check remote.url/local_store/pipeline.data_path for number of files
+        check_datepaths(valid_record)
 
     return validated_catalog
 
@@ -48,9 +80,8 @@ schema = Schema({
         'doi': And(validators.url, str, error='DOI must be a URL'),
         'variables': list,
         'remote': {'url': Use(URL),
-                   Optional('login'): {
-                       'username': str,
-                       Or('service', 'password', only_one=True): str},
+                   Optional('username'): str,
+                   Optional(Or('service', 'password', only_one=True)): str,
                    Optional('port'): int},
         'local_store': Use(Path),
         Optional('pipelines'): {str: {'data_path': Use(Path),
