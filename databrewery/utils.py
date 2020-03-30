@@ -206,3 +206,31 @@ def is_file_valid(local_path):
             return True
     except error:
         return False
+
+
+def make_date_path_pairs(dates, *date_paths):
+    # function could be standalone in db.utils
+    from .utils import Path, URL
+    from numpy import array
+
+    path_list = []
+    for date_path in date_paths:
+        fname_list = date_path[dates]
+
+        if isinstance(fname_list, (Path, URL)):
+            fname_list = [fname_list]
+
+        path_list += fname_list,
+
+    if len(date_paths) > 1:
+        lengths = set([len(file_list) for file_list in path_list])
+        if len(lengths) > 1:
+            msg = (
+                'Given paths produce different number of files. '
+                'Paths should produce the same number of output files. \n')
+            msg += '\n'.join([p for p in date_paths])
+            raise AssertionError(msg)
+
+    path_pairs = array([p for p in zip(*path_list)])
+
+    return path_pairs

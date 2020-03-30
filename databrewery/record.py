@@ -116,7 +116,7 @@ class Record:
 
     def _download_multiple_processes(self, remote_local_files, njobs):
         from multiprocessing import Process, Queue
-        # TODO: Currently broken. Will be better to use joblib
+        # TODO: Will be better to use joblib and
 
         paths = remote_local_files
         verbose = self.verbose
@@ -139,7 +139,7 @@ class Record:
             processes += p,
             p.start()
 
-        # FIXME single download no longer returns to queue
+        # TODO single download no longer returns to queue
         missing_files = []
         for p in processes:
             missing_files += queue.get()
@@ -163,15 +163,15 @@ class Record:
         if njobs == 1:
             out = self._download_single_process(file_pairs)
 
-        # TODO: parallel downloads are currently broken. Could improve
+        # FIXME: parallel downloads are currently broken.
         if njobs > 1:
             out = self._download_multiple_processes(file_pairs, njobs)
 
         self.download_results = DictObject(out)
 
     def download_data(self, dates, njobs=1):
-
-        paths = self._make_paths(
+        from .utils import make_date_path_pairs
+        paths = make_date_path_pairs(
             dates,
             self.config['remote']['url'],
             self.config['local_store'])
@@ -179,17 +179,20 @@ class Record:
         self._download_data(paths, njobs=njobs)
 
     def local_files(self, dates):
-        from .utils import is_file_valid
-        paths = self._make_paths(
+        from .utils import is_file_valid, make_date_path_pairs
+
+        paths = make_date_path_pairs(
             dates,
             self.config['remote']['url'],
             self.config['local_store'])
 
-        avail = []
+        # the current structure is perhaps not the best for a DAG workflow
+        # this is a slightly hacky solution to the problem
+        exists_locally = []
         download_pairs = []
         for path_remote, path_local in paths:
             if is_file_valid(path_local):
-                avail += path_local,
+                exists_locally += path_local,
             # download results contains missing URLs - prevents loop download
             elif path_remote not in self.download_results['remote_not_exist']:
                 download_pairs += (path_remote, path_local),
@@ -201,38 +204,11 @@ class Record:
                 self._download_data(download_pairs)
                 return self.local_files(dates)
             else:
-                return avail
-        elif avail is []:
+                return exists_locally
+        elif exists_locally is []:
             raise FileNotFoundError('No files returned for dates')
         else:
-            return avail
-
-    @classmethod
-    def _make_paths(cls, dates, *date_paths):
-        from .utils import Path, URL
-        from numpy import array
-
-        path_list = []
-        for date_path in date_paths:
-            fname_list = date_path[dates]
-
-            if isinstance(fname_list, (Path, URL)):
-                fname_list = [fname_list]
-
-            path_list += fname_list,
-
-        if len(date_paths) > 1:
-            lengths = set([len(file_list) for file_list in path_list])
-            if len(lengths) > 1:
-                msg = (
-                    'Given paths produce different number of files. '
-                    'Paths should produce the same number of output files. \n')
-                msg += '\n'.join([p for p in date_paths])
-                raise AssertionError(msg)
-
-        path_pairs = array([p for p in zip(*path_list)])
-
-        return path_pairs
+            return exists_locally
 
 
 class PipeFiles:
@@ -246,7 +222,8 @@ class PipeFiles:
         Gets the file names for the given date range.
         If not present, downloads the files.
         """
-        paths = self._parent._make_paths(
+        from .utils import make_date_path_pairs
+        paths = make_date_path_pairs(
             dates,
             self._parent.config.remote.url,
             self._parent.config.local_store,
