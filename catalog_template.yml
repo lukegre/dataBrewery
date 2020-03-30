@@ -8,10 +8,9 @@ lsce_ffnnv1: # sea surface height
     remote:
         # URL is where the data is downloaded from. 
         url: "ftp://my.cmems-du.eu/Core/MULTIOBS_GLO_BIO_REP_015_005/dataset-carbon-rep-monthly/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}*.nc"
-        login:  # uses local system keyring - more secure than typing password
-            service: "CMEMS"  # the name of the web service
-            username: "lgregor1"
-            # password: ''  # recommend to use the keyring rather
+        service: "CMEMS"  # the name of the web service on the system keyring - more secure than password
+        username: "lgregor1"
+        # password: ''  # recommend to use the keyring rather
         port: 22001  # optional port number if using sftp
     # local_store is where data is cloned to - remote.url and local_store must result in the same number of files
     local_store: "/Users/luke/Desktop/pco2_denvilsommer/ffnn_v1/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}.nc"
@@ -21,3 +20,14 @@ lsce_ffnnv1: # sea surface height
             functions:  # functions that will be applied to the pipeline xds --> xds
                 - databrewery.preprocess.rename_to_latlon
                 - databrewery.preprocess.center_coords_at_0
+
+
+soda_34:
+    description: "Simple Ocean Data Assimilation v3.4"
+    doi: "https://doi.org/10.1175/JCLI-D-18-0149.1"
+    variables:
+        - temperature
+        - salinity
+    remote:
+        url: "http://dsrs.atmos.umd.edu/DATA/soda3.4.2/REGRIDED/ocean/soda3.4.2_5dy_ocean_reg_{t:%Y_%m_%d}.nc"
+    local_store: "/Users/luke/Desktop/soda_clim/soda_3.4.2/soda3.4.2_5dy_ocean_reg_{t:%Y_%m_%d}.nc"
