@@ -18,6 +18,8 @@ class Record:
                 pipe = PipeFiles(key, self, self.config.pipelines[key])
                 setattr(self, key, pipe)
 
+        self.download_results = {'remote_not_exist': []}
+
     def __str__(self):
         name = self.name.upper()
         blank = ' '*2
@@ -49,11 +51,15 @@ class Record:
         self._downloader = determine_connection_type(url)
 
         host = url.parsed.netloc
-        connect = self._downloader(host, **self.config.remote.login.__dict__)
+        login_dict = self.config.remote.__dict__.copy()
+        login_dict.pop('url')
+        connect = self._downloader(host, **login_dict)
 
         return connect
 
     def _download_single_process(self, remote_local_files):
+        import os
+        from warnings import warn
         downloader = self._initiate_connection()
         downloader.verbose = self.verbose
 
@@ -62,8 +68,16 @@ class Record:
                         2: 'local_exists'}
         outmsg = {k: [] for k in msg_decipher.values()}
         for remote, local in remote_local_files:
-            msg = downloader.download_file(remote, local)
-            outmsg[msg_decipher[msg]] += remote,
+            try:
+                msg = downloader.download_file(remote, local)
+                outmsg[msg_decipher[msg]] += remote,
+            except (Exception, KeyboardInterrupt) as e:
+                if os.path.isfile(local):
+                    os.remove(local)
+                    warn('\n\n' + '#' * 40 +
+                         f'\nRemoved partially downloaded file {local}\n'
+                         + '#' * 40 + '\n')
+                raise e
 
         downloader.close_connection()
 
@@ -102,32 +116,6 @@ class Record:
 
         return missing_files
 
-    def _make_paths(self, dates, *date_paths):
-        from .utils import Path, URL
-        from numpy import array
-
-        path_list = []
-        for date_path in date_paths:
-            fname_list = date_path[dates]
-
-            if isinstance(fname_list, (Path, URL)):
-                fname_list = [fname_list]
-
-            path_list += fname_list,
-
-        if len(date_paths) > 1:
-            lengths = set([len(file_list) for file_list in path_list])
-            if len(lengths) > 1:
-                msg = (
-                    'Given paths produce different number of files. '
-                    'Ensure that the paths are compatible. \n'
-                    '\n'.join([p for p in date_paths]))
-                raise AssertionError(msg)
-
-        path_pairs = array([p for p in zip(*path_list)])
-
-        return path_pairs
-
     def _download_data(self, file_pairs, njobs=1):
         from multiprocessing import cpu_count
         from .utils import DictObject
@@ -160,7 +148,7 @@ class Record:
         self._download_data(paths, njobs=njobs)
 
     def local_files(self, dates):
-        from .utils import Path
+        from .utils import is_file_valid
         paths = self._make_paths(
             dates,
             self.config['remote']['url'],
@@ -169,9 +157,10 @@ class Record:
         avail = []
         download_pairs = []
         for path_remote, path_local in paths:
-            if Path(path_local).is_file():
+            if is_file_valid(path_local):
                 avail += path_local,
-            else:
+            # download results contains missing URLs - prevents loop download
+            elif path_remote not in self.download_results['remote_not_exist']:
                 download_pairs += (path_remote, path_local),
 
         if download_pairs != []:
@@ -186,6 +175,33 @@ class Record:
             raise FileNotFoundError('No files returned for dates')
         else:
             return avail
+
+    @classmethod
+    def _make_paths(cls, dates, *date_paths):
+        from .utils import Path, URL
+        from numpy import array
+
+        path_list = []
+        for date_path in date_paths:
+            fname_list = date_path[dates]
+
+            if isinstance(fname_list, (Path, URL)):
+                fname_list = [fname_list]
+
+            path_list += fname_list,
+
+        if len(date_paths) > 1:
+            lengths = set([len(file_list) for file_list in path_list])
+            if len(lengths) > 1:
+                msg = (
+                    'Given paths produce different number of files. '
+                    'Paths should produce the same number of output files. \n')
+                msg += '\n'.join([p for p in date_paths])
+                raise AssertionError(msg)
+
+        path_pairs = array([p for p in zip(*path_list)])
+
+        return path_pairs
 
 
 class PipeFiles:
