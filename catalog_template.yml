@@ -1,7 +1,7 @@
 # can be used as replacements in other entries that will be replaced at runtime
 # must be all caps - will be replaced if in curly braces {ANY_CAPS_NAME}
-DATA_PATH: /Users/luke/Desktop
-PIPE_PATH: /Users/luke/test
+# ~ (tilde) can be used to represent the $HOME directory
+DATA_PATH: ~/Desktop
 
 lsce_ffnnv1:
     # description tells the user about the product and can be written over mutliple lines

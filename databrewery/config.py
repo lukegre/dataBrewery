@@ -68,6 +68,7 @@ def validate_catalog(catalog_dict):
 
 
 def read_catalog(catalog_fname):
+    from pathlib import Path
     import yaml
 
     cat_dict = yaml.safe_load(open(catalog_fname))
@@ -76,7 +77,8 @@ def read_catalog(catalog_fname):
 
     raw = open(catalog_fname).read()
     for key in path_dict:
-        raw = raw.replace(f'{{{key}}}', path_dict[key])
+        path = Path(path_dict[key]).expanduser()
+        raw = raw.replace(f'{{{key}}}', str(path))
 
     catalog_dict = yaml.safe_load(raw)
     for key in path_dict:
