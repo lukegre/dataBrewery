@@ -1,3 +1,6 @@
+"""
+Reads in the catalog.yaml file and validates the entries using a schema
+"""
 from importlib import import_module
 
 import validators
@@ -11,6 +14,10 @@ class ConfigError(BaseException):
 
 
 def get_modules_from_list(list_of_module_names):
+    """
+    Imports python functions if given a list of module names as strings
+    """
+
     def get_module_from_string(module_name_str):
 
         mod = import_module(module_name_str.split('.')[0])
@@ -30,6 +37,10 @@ def get_modules_from_list(list_of_module_names):
 
 
 def check_datepaths(record):
+    """
+    Asserts that the given date paths return the same number of files,
+    otherwise raises an informative error.
+    """
     from .utils import make_date_path_pairs
     import pandas as pd
 
@@ -55,7 +66,9 @@ def check_datepaths(record):
 
 
 def validate_catalog(catalog_dict):
-
+    """
+    Validates the catalog entries against the schema
+    """
     validated_catalog = {}
     for key in catalog_dict:
         record = catalog_dict[key]
@@ -68,6 +81,14 @@ def validate_catalog(catalog_dict):
 
 
 def read_catalog(catalog_fname):
+    """
+    Reads in a yaml catalog entry and validates against a schema
+
+    Parameters
+    ==========
+    catalog_fname: str
+        the path to the catalog filename.
+    """
     from pathlib import Path
     import yaml
 

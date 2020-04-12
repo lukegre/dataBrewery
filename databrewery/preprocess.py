@@ -1,9 +1,23 @@
+"""
+Used to process netCDF files to a standard format.
+All functions take in an xarray.Dataset and return an xarray.Dataset
+All functions in this preprocessing module should add metadata to the
+xarray object under `history`
+"""
+
 
 def rename_to_latlon(xds):
+    """
+    Tries to rename latitude to lat and longitude to lon
+    from a list of standard names:
+        time: mtime
+        lat: latitude, lats, yt_ocean
+        lon: longitude, lons, longs, long, xt_ocean
+    """
 
     time = ['mtime']
     lat = ['latitude', 'lats', 'yt_ocean']
-    lon = ['longitude', 'lons', 'xt_ocean']
+    lon = ['longitude', 'lons', 'xt_ocean', 'longs', 'long']
 
     rename_dict = {}
     for key in xds.coords.keys():
@@ -22,6 +36,9 @@ def rename_to_latlon(xds):
 
 
 def center_coords_at_0(xds):
+    """
+    Change longitude from 0:360 to -180:180
+    """
     import numpy as np
 
     def strictly_increasing(L):
@@ -45,7 +62,11 @@ def center_coords_at_0(xds):
 
 
 def center_time_monthly_15th(xds):
+    """
+    If monthly data, centeres on the 15th of the month
+    """
     from pandas import Timestamp
+
     assert xds.time.size == 1, 'Only accepts one month DataArrays'
 
     attrs = xds.attrs
@@ -59,6 +80,11 @@ def center_time_monthly_15th(xds):
 
 
 def shallowest(xda):
+    """
+    BROKEN
+
+    Gets the surface data
+    """
     for dim in xda.dims:
         depth_dim = None
         if hasattr(xda[dim], 'units'):
@@ -74,26 +100,25 @@ def shallowest(xda):
     return xda
 
 
-def downsample_025(xda):
-    import xarray as xr
-    if isinstance(xda, xr.DataArray):
-        xda = _netcdf_add_brew_hist(xda, 'downsampled lat,lon to 0.25deg')
-        return xda.downscale(lat_step=0.25, lon_step=0.25) - 273.15
-    if isinstance(xda, xr.Dataset):
-        return xr.merge([downscale(xda[key]) for key in xda.data_vars])
-
-
 def interpolate_025(xds, method='linear'):
+    """
+    Interpolates global data linearly, but I recommend rather using CDO's
+    bilinear interpolation
+    """
     from numpy import arange
+
     attrs = xds.attrs
-    xds = (xds
-            .interp(lat=arange(-89.875, 90, .25),
-                    lon=arange(-179.875, 180, .25),
-                    method=method)
-            # filling gaps due to interpolation along 180deg
-            .roll(lon=720, roll_coords=False)
-            .interpolate_na(dim='lon', limit=10)
-            .roll(lon=-720, roll_coords=False))
+    xds = (
+        xds.interp(
+            lat=arange(-89.875, 90, 0.25),
+            lon=arange(-179.875, 180, 0.25),
+            method=method,
+        )
+        # filling gaps due to interpolation along 180deg
+        .roll(lon=720, roll_coords=False)
+        .interpolate_na(dim='lon', limit=10)
+        .roll(lon=-720, roll_coords=False)
+    )
 
     xds.attrs = attrs
     xds = _netcdf_add_brew_hist(xds, 'interpolated to 0.25deg')
@@ -103,15 +128,17 @@ def interpolate_025(xds, method='linear'):
 
 def interpolate_1deg(xds, method='linear'):
     from numpy import arange
+
     attrs = xds.attrs
-    xds = (xds
-            .interp(lat=arange(-89.5, 90),
-                    lon=arange(-179.5, 180),
-                    method=method)
-            # filling gaps due to interpolation along 180deg
-            .roll(lon=180, roll_coords=False)
-            .interpolate_na(dim='lon', limit=3)
-            .roll(lon=-180, roll_coords=False))
+    xds = (
+        xds.interp(
+            lat=arange(-89.5, 90), lon=arange(-179.5, 180), method=method
+        )
+        # filling gaps due to interpolation along 180deg
+        .roll(lon=180, roll_coords=False)
+        .interpolate_na(dim='lon', limit=3)
+        .roll(lon=-180, roll_coords=False)
+    )
 
     xds.attrs = attrs
     xds = _netcdf_add_brew_hist(xds, 'interpolated to 1deg')
@@ -122,9 +149,9 @@ def interpolate_1deg(xds, method='linear'):
 def resample_time_1D(xds):
     attrs = xds.attrs
 
-    xds = (xds
-           .resample(time='1D', keep_attrs=True)
-           .mean('time', keep_attrs=True))
+    xds = xds.resample(time='1D', keep_attrs=True).mean(
+        'time', keep_attrs=True
+    )
 
     xds.attrs.update(attrs)
     xds = _netcdf_add_brew_hist(xds, 'resampled to time to 1D')
@@ -134,11 +161,12 @@ def resample_time_1D(xds):
 
 def resample_time_1M(xds):
     import pandas as pd
+
     attrs = xds.attrs
 
-    xds = (xds
-           .resample(time='1MS', keep_attrs=True)
-           .mean('time', keep_attrs=True))
+    xds = xds.resample(time='1MS', keep_attrs=True).mean(
+        'time', keep_attrs=True
+    )
     xds.time.values += pd.Timedelta('14D')
 
     xds.attrs.update(attrs)
@@ -148,9 +176,7 @@ def resample_time_1M(xds):
 
 
 def fill_time_monthly_to_daily(xds):
-    from calendar import monthlen
     import pandas as pd
-    import re
 
     time = xds.time.to_index()
     year_0 = time.year.unique().values[0]
@@ -196,7 +222,7 @@ def unzip(zip_path, dest_dir=None, verbose=1):
         files_to_extract = list(flist_zip - flist_dir)
 
         if not files_to_extract:
-            if verbose: 
+            if verbose:
                 print(f'All files extracted: {zipped.filename}')
         return files_to_extract
 
@@ -210,8 +236,8 @@ def unzip(zip_path, dest_dir=None, verbose=1):
 
     files_to_extract = get_list_of_zipped_files(zipped, dest_dir)
     for file in files_to_extract:
-        shortpath = shorten_path_for_print(os.path.join(dest_dir, file), 80)
-        if verbose: print(f" Extracting: {shortpath}")
+        if verbose:
+            print(f' Extracting: {file}')
         zipped.extractall(path=dest_dir, members=[file])
 
     return [os.path.join(dest_dir, f) for f in zipped.namelist()]
@@ -255,31 +281,11 @@ def untar(tar_path, dest_dir=None, verbose=1):
     return [os.path.join(dest_dir, f) for f in tarred.getnames()]
 
 
-def shorten_path_for_print(path, maxlen=100):
-    if len(path) <= maxlen:
-        return path
-
-    from urllib.parse import urlparse
-    url = urlparse(path)
-    out = ''
-
-    out += url.scheme + '://' if url.scheme is not '' else ''
-    out += url.netloc
-
-    out += '/'.join(url.path[:15].split('/')[:-1])
-    out += '/.../'
-    length_remaining = maxlen - len(out)
-    end_of_path_ugly = url.path[-length_remaining:]
-    out += '/'.join(end_of_path_ugly.split('/')[1:])
-
-    return out
-
-
 def _netcdf_add_brew_hist(xds, msg, key='history'):
     from pandas import Timestamp
 
     now = Timestamp.today().strftime('%Y-%m-%dT%H:%M')
-    prefix = f"\n[DataBrewery@{now}] "
+    prefix = f'\n[DataBrewery@{now}] '
     msg = prefix + msg
     if key not in xds.attrs:
         xds.attrs[key] = msg
@@ -292,6 +298,10 @@ def _netcdf_add_brew_hist(xds, msg, key='history'):
 
 
 def apply_process_pipeline(xds, pipe):
+    """
+    Applies a list of functions to an xarray.Dataset object.
+    Functions must accept a Dataset and return a Dataset
+    """
     attrs = xds.attrs
     for func in pipe:
         xds = func(xds)
@@ -302,18 +312,22 @@ def apply_process_pipeline(xds, pipe):
 
 def is_local_file_valid(local_path):
     from os.path import isfile
+
     if not isfile(local_path):
         return False
 
     # has an opener been passed, if not assumes file is valid
     if local_path.endswith('.nc'):
         from netCDF4 import Dataset as opener
+
         error = OSError
     elif local_path.endswith('.zip'):
         from zipfile import ZipFile as opener, BadZipFile as error
     else:
         error = BaseException
-        def opener(p): return None  # dummy opener
+
+        def opener(p):
+            return None  # dummy opener
 
     # tries to open the path, if it fails, not valid, if it passes, valid
     try:
