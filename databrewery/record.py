@@ -1,4 +1,3 @@
-
 class Record:
     def __init__(self, record_name, config_dict, verbose=2):
         from .utils import DictObject
@@ -7,9 +6,8 @@ class Record:
         self.debug = True if verbose == 2 else False
         self.verbose = verbose
 
-        self.meta = DictObject(dict(
-            description=config_dict.pop('description'),
-            doi=config_dict.pop('doi')))
+        self.description = config_dict.pop('description')
+        self.doi = config_dict.pop('doi')
 
         self.config = DictObject(config_dict)
 
@@ -17,24 +15,30 @@ class Record:
             for key in self.config.pipelines:
                 pipe = PipeFiles(key, self, self.config.pipelines[key])
                 setattr(self, key, pipe)
+        self._reset_download_results()
 
-        self.download_results = {'remote_not_exist': []}
+    def _reset_download_results(self):
+        self.download_results = {
+            'remote_not_exist': [],
+            'local_exists': [],
+            'downloaded': [],
+        }
 
     def __str__(self):
         name = self.name.upper()
-        blank = ' '*2
+        blank = ' ' * 2
         L = 80 - (len(name) + 2)
-        eq = "="
-        txt = f"{eq:=>{L//2-1}}  {name: >2}{blank:=<{L//2-1}}\n"
+        eq = '='
+        txt = f'{eq:=>{L//2-1}}  {name: >2}{blank:=<{L//2-1}}\n'
         # n = len(self.name) + 2
         for key in ['url', 'path', 'date', 'login', 'keywords']:
             keyu = key.upper()
             vals = getattr(self, key).__str__()
-            if vals == "":
+            if vals == '':
                 continue
             L = 80 - (len(key) + 2)
-            txt += f"\n{keyu: >2}"  # {blank:-<{L}}\n"
-            txt += ("\n" + vals).replace("\n", '\n    ')
+            txt += f'\n{keyu: >2}'  # {blank:-<{L}}\n"
+            txt += ('\n' + vals).replace('\n', '\n    ')
             txt += '\n'
 
         return txt
@@ -85,25 +89,33 @@ class Record:
         """
         import os
         from warnings import warn
+
         downloader = self._initiate_connection()
         downloader.verbose = self.verbose
 
         msg_decipher = {
-            0: 'downloaded', 1: 'remote_not_exist', 2: 'local_exists'}
+            0: 'downloaded',
+            1: 'remote_not_exist',
+            2: 'local_exists',
+        }
         download_status = {k: [] for k in msg_decipher.values()}
         for remote, local in remote_local_files:
             # download_file returns a code that is described by the
             # msg_decipher codes above
             try:
                 msg = downloader.download_file(remote, local)
-                download_status[msg_decipher[msg]] += remote,
+                download_status[msg_decipher[msg]] += (local,)
             except (Exception, KeyboardInterrupt) as error:
                 # catches any exception so that file is deleted if incomplete
                 if os.path.isfile(local):
                     os.remove(local)
-                    warn('\n\n' + '#' * 40 +
-                         f'\nRemoved partially downloaded file {local}\n'
-                         + '#' * 40 + '\n')
+                    warn(
+                        '\n\n'
+                        + '#' * 40
+                        + f'\nRemoved partially downloaded file {local}\n'
+                        + '#' * 40
+                        + '\n'
+                    )
                 # downloader connection closed to avoid too many connections
                 downloader.close_connection()
                 # raises caught error at the end
@@ -116,6 +128,7 @@ class Record:
 
     def _download_multiple_processes(self, remote_local_files, njobs):
         from multiprocessing import Process, Queue
+
         # TODO: Will be better to use joblib and
 
         paths = remote_local_files
@@ -129,14 +142,15 @@ class Record:
             # i0 = i * step
             # i1 = (i+1) * step
             # split_paths += paths[i0:i1],
-            split_paths += paths[i:njobs],
+            split_paths += (paths[i:njobs],)
 
         processes = []
         queue = Queue()
         for i in range(njobs):
-            p = Process(target=self._download_single_process,
-                        args=(split_paths[i]))
-            processes += p,
+            p = Process(
+                target=self._download_single_process, args=(split_paths[i])
+            )
+            processes += (p,)
             p.start()
 
         # TODO single download no longer returns to queue
@@ -149,7 +163,6 @@ class Record:
 
     def _download_data(self, file_pairs, njobs=1):
         from multiprocessing import cpu_count
-        from .utils import DictObject
         from numpy import array
 
         file_pairs = array(file_pairs)
@@ -157,8 +170,10 @@ class Record:
         ncpus = cpu_count() - 1
         njobs = ncpus if njobs > ncpus else njobs
 
-        self._print(f'Downloading {file_pairs.shape[0]} '
-                    f'{self.name} files with {njobs} jobs')
+        self._print(
+            f'Downloading {file_pairs.shape[0]} '
+            f'{self.name} files with {njobs} jobs'
+        )
 
         if njobs == 1:
             out = self._download_single_process(file_pairs)
@@ -167,24 +182,23 @@ class Record:
         if njobs > 1:
             out = self._download_multiple_processes(file_pairs, njobs)
 
-        self.download_results = DictObject(out)
+        self.download_results = out
 
     def download_data(self, dates, njobs=1):
         from .utils import make_date_path_pairs
+
         paths = make_date_path_pairs(
-            dates,
-            self.config['remote']['url'],
-            self.config['local_store'])
+            dates, self.config['remote']['url'], self.config['local_store']
+        )
 
         self._download_data(paths, njobs=njobs)
 
-    def local_files(self, dates):
-        from .utils import is_file_valid, make_date_path_pairs
+    def local_files(self, dates, automatic_download=False):
+        from .utils import is_file_valid, make_date_path_pairs, DictObject
 
         paths = make_date_path_pairs(
-            dates,
-            self.config['remote']['url'],
-            self.config['local_store'])
+            dates, self.config['remote']['url'], self.config['local_store']
+        )
 
         # the current structure is perhaps not the best for a DAG workflow
         # this is a slightly hacky solution to the problem
@@ -192,14 +206,18 @@ class Record:
         download_pairs = []
         for path_remote, path_local in paths:
             if is_file_valid(path_local):
-                exists_locally += path_local,
+                self.download_results['local_exists'] += (path_local,)
+                exists_locally += (path_local,)
             # download results contains missing URLs - prevents loop download
             elif path_remote not in self.download_results['remote_not_exist']:
-                download_pairs += (path_remote, path_local),
+                download_pairs += ((path_remote, path_local),)
 
         if download_pairs != []:
             n = len(download_pairs)
-            choice = input(f'{n} missing files to download. Continue [y/n]: ')
+            if automatic_download:
+                choice = 'y'
+            else:
+                choice = input(f'{n} missing files. Download? [y/n]: ')
             if choice.lower().startswith('y'):
                 self._download_data(download_pairs)
                 return self.local_files(dates)
@@ -208,6 +226,25 @@ class Record:
         elif exists_locally is []:
             raise FileNotFoundError('No files returned for dates')
         else:
+            results = self.download_results
+            summary = (
+                f'\nDownload report for {self.name}:\n'
+                + '-' * 22
+                + '\n'
+                + '\n'.join(
+                    [f'{k: <18} {len(v): >3}' for k, v in results.items()]
+                )
+                + '\n'
+                + '=' * 22
+                + '\n'
+            )
+            if self.verbose == 1:
+                print(summary)
+            elif self.verbose > 1:
+                print(summary)
+                print(DictObject(results))
+            self._reset_download_results()
+
             return exists_locally
 
 
@@ -223,11 +260,13 @@ class PipeFiles:
         If not present, downloads the files.
         """
         from .utils import make_date_path_pairs
+
         paths = make_date_path_pairs(
             dates,
             self._parent.config.remote.url,
             self._parent.config.local_store,
-            self._data_path)
+            self._data_path,
+        )
 
         # TODO: find missing files for pipe and local_store
 
@@ -236,6 +275,7 @@ class PipeFiles:
     def _get_file_opener(self, name):
         if name.endswith('.nc'):
             from xarray import open_dataset
+
             return open_dataset
         else:
             return open
