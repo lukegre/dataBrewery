@@ -25,23 +25,7 @@ class Record:
         }
 
     def __str__(self):
-        name = self.name.upper()
-        blank = ' ' * 2
-        L = 80 - (len(name) + 2)
-        eq = '='
-        txt = f'{eq:=>{L//2-1}}  {name: >2}{blank:=<{L//2-1}}\n'
-        # n = len(self.name) + 2
-        for key in ['url', 'path', 'date', 'login', 'keywords']:
-            keyu = key.upper()
-            vals = getattr(self, key).__str__()
-            if vals == '':
-                continue
-            L = 80 - (len(key) + 2)
-            txt += f'\n{keyu: >2}'  # {blank:-<{L}}\n"
-            txt += ('\n' + vals).replace('\n', '\n    ')
-            txt += '\n'
-
-        return txt
+        return str(self.config)
 
     def _print(self, *msg):
         if self.verbose >= 1:
