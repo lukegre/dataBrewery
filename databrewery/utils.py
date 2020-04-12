@@ -1,27 +1,7 @@
-import pandas as pd
-from warnings import warn
 import pprint
+from warnings import warn
 
-
-class BrewError(BaseException):
-    pass
-
-
-class BrewWarning(UserWarning, BaseException):
-    pass
-
-
-class ConfigError(BaseException):
-    pass
-
-
-class PrettyPrinter(pprint.PrettyPrinter):
-    def _format(self, object, *args, **kwargs):
-        if isinstance(object, (str, Path)):
-            object = str(object)
-            if len(object) > 70:
-                object = '...' + object[-70:]
-        return pprint.PrettyPrinter._format(self, object, *args, **kwargs)
+import pandas as pd
 
 
 class DictObject(object):
@@ -29,22 +9,25 @@ class DictObject(object):
 
         for a, b in d.items():
             if isinstance(b, (list, tuple)):
-                setattr(self, a, [DictObject(x)
-                                  if isinstance(x, dict)
-                                  else x for x in b])
+                setattr(
+                    self,
+                    a,
+                    [DictObject(x) if isinstance(x, dict) else x for x in b],
+                )
             else:
                 setattr(self, a, DictObject(b) if isinstance(b, dict) else b)
 
     def __repr__(self):
-        printer = PrettyPrinter().pformat
-        return printer(self.__dict__)
+        return pprint.pformat(self.__dict__)
 
     def __getitem__(self, key):
         if isinstance(key, str):
             return self.__dict__[key]
         else:
-            raise IndexError('The given index key type is not supported. '
-                             'Only string accepted')
+            raise IndexError(
+                'The given index key type is not supported. '
+                'Only string accepted'
+            )
 
     def __iter__(self):
         return self.__dict__.__iter__()
@@ -54,9 +37,8 @@ class DictObject(object):
 
 
 class DatePath(str):
-
     def __repr__(self):
-        return f"{self.__class__.__name__}({self})"
+        return f'{self.__class__.__name__}({self})'
 
     def __getitem__(self, getter):
         acceptable = (pd.Timestamp, pd.DatetimeIndex)
@@ -70,16 +52,17 @@ class DatePath(str):
             uniquelist = []
             for d in filelist:
                 if d not in uniquelist:
-                    uniquelist += d,
+                    uniquelist += (d,)
             filelist = uniquelist
             if filelist == []:
-                warn("No files returned (check input range)", UserWarning)
+                warn('No files returned (check input range)', UserWarning)
             return filelist
 
         else:
-            msg = (f"{type(getter)} not supported for DatePath, only "
-                   f"{[str(a).split('.')[-1][:-2] for a in acceptable]}."
-                   ).replace("'", '')
+            msg = (
+                f'{type(getter)} not supported for DatePath, only '
+                f"{[str(a).split('.')[-1][:-2] for a in acceptable]}."
+            ).replace("'", '')
             raise TypeError(msg)
 
     def format(self, *args, **kwargs):
@@ -94,19 +77,26 @@ class URL(DatePath):
     @property
     def parsed(self):
         from urllib.parse import urlparse
+
         return urlparse(str(self))
 
 
 class Path(DatePath):
-
     def __init__(self, string):
         from pathlib import _windows_flavour, _posix_flavour, Path as _Path
         import os
 
         self._flavour = _windows_flavour if os.name == 'nt' else _posix_flavour
 
-        path_funcs = ['parent', 'name', 'glob', 'exists',
-                      'mkdir', 'is_dir', 'is_file']
+        path_funcs = [
+            'parent',
+            'name',
+            'glob',
+            'exists',
+            'mkdir',
+            'is_dir',
+            'is_file',
+        ]
 
         for func_name in path_funcs:
             func = getattr(_Path(self).expanduser(), func_name)
@@ -117,6 +107,7 @@ class Path(DatePath):
     @property
     def globbed(self):
         import pathlib
+
         path = pathlib.Path(self).expanduser()
         parent = path.parent
         child = path.name
@@ -159,14 +150,17 @@ def get_dates(date_like):
     elif isinstance(date_like, (list, tuple, set)):
         dates = pd.DatetimeIndex([get_dates(d) for d in date_like])
     else:
-        raise ValueError('Something is wrong with the date input. Must be '
-                         'str(YYYY-MM-DD) or Timestamp or DatetimeIndex')
+        raise ValueError(
+            'Something is wrong with the date input. Must be '
+            'str(YYYY-MM-DD) or Timestamp or DatetimeIndex'
+        )
 
     return dates
 
 
 def slice_to_date_range(slice_obj):
     import pandas as pd
+
     t0, t1, ts = slice_obj.start, slice_obj.stop, slice_obj.step
 
     if t0 is None:
@@ -176,8 +170,10 @@ def slice_to_date_range(slice_obj):
     if ts is None:
         ts = '1D'
     if not isinstance(ts, str):
-        raise IndexError('The slice step must be a frequency string '
-                         'parsable by pd.Timestamp')
+        raise IndexError(
+            'The slice step must be a frequency string '
+            'parsable by pd.Timestamp'
+        )
 
     t0, t1 = [pd.Timestamp(str(t)) for t in [t0, t1]]
     date_range = pd.date_range(t0, t1, freq=ts)
@@ -187,18 +183,22 @@ def slice_to_date_range(slice_obj):
 
 def is_file_valid(local_path):
     from os.path import isfile
+
     if not isfile(local_path):
         return False
 
     # has an opener been passed, if not assumes file is valid
     if local_path.endswith('.nc'):
         from netCDF4 import Dataset as opener
+
         error = OSError
     elif local_path.endswith('.zip'):
         from zipfile import ZipFile as opener, BadZipFile as error
     else:
         error = BaseException
-        def opener(p): return None  # dummy opener
+
+        def opener(p):
+            return None  # dummy opener
 
     # tries to open the path, if it fails, not valid, if it passes, valid
     try:
@@ -220,14 +220,15 @@ def make_date_path_pairs(dates, *date_paths):
         if isinstance(fname_list, (Path, URL)):
             fname_list = [fname_list]
 
-        path_list += fname_list,
+        path_list += (fname_list,)
 
     if len(date_paths) > 1:
         lengths = set([len(file_list) for file_list in path_list])
         if len(lengths) > 1:
             msg = (
                 'Given paths produce different number of files. '
-                'Paths should produce the same number of output files. \n')
+                'Paths should produce the same number of output files. \n'
+            )
             msg += '\n'.join([p for p in date_paths])
             raise AssertionError(msg)
 
