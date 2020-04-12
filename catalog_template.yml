@@ -1,33 +1,52 @@
-lsce_ffnnv1: # sea surface height
-    # description tells the user about the product
-    description: "LSCE-FFNN-v1: a two-step neural network model for the reconstruction of surface ocean pCO2 over the global ocean"
-    doi: "https://doi.org/10.5194/gmd-12-2091-2019"  # must add doi for user 
+# can be used as replacements in other entries that will be replaced at runtime
+# must be all caps - will be replaced if in curly braces {ANY_CAPS_NAME}
+DATA_PATH: /Users/luke/Desktop
+PIPE_PATH: /Users/luke/test
+
+lsce_ffnnv1:
+    # description tells the user about the product and can be written over mutliple lines
+    description:
+        LSCE-FFNN-v1 is a two-step neural network model for the
+        reconstruction of surface ocean pCO2 over the global ocean
+    doi: "https://doi.org/10.5194/gmd-12-2091-2019"  # must add doi for user
     variables:  # makes it easier for the user to find the data they want
         - pco2
         - ph
     remote:
-        # URL is where the data is downloaded from. 
-        url: "ftp://my.cmems-du.eu/Core/MULTIOBS_GLO_BIO_REP_015_005/dataset-carbon-rep-monthly/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}*.nc"
+        # URL is where the data is downloaded from.
+        # These URLs take a special syntax where {t:} denotes that a date should be inserted
+        # you can use the datetime syntax in python to fill these placeholders
+        # %Y = four digit year; %y = two digit year;
+        # %m = two digit month;
+        # %j = three digit day of the year;
+        # %d = two digit day of the month
+        # A more technical note: the first part of the url (ftp in this case) denotes the type of connection
+        url: "ftp://my.cmems-du.eu/Core/MULTIOBS_GLO_BIO_CARBON_SURFACE_REP_015_008/dataset-carbon-rep-monthly/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}*.nc"
         service: "CMEMS"  # the name of the web service on the system keyring - more secure than password
         username: "lgregor1"
         # password: ''  # recommend to use the keyring rather
         port: 22001  # optional port number if using sftp
     # local_store is where data is cloned to - remote.url and local_store must result in the same number of files
-    local_store: "/Users/luke/Desktop/pco2_denvilsommer/ffnn_v1/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}.nc"
+    local_store: "{DATA_PATH}/pco2_denvilsommer/ffnn_v1/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}.nc"
+    # pipelines is currently just an idea, but I would like to be able to have a second component
+    # that allows the user to access processed data at the given location.
+    # if that data does not exist then process or download the data
     pipelines:  # this tells the brewery that you want to have a processed pipeline
         mon_1deg:  # this is the name of the pipeline - this is NB
-            data_path: "/Users/luke/Desktop/data/mon_1deg/lsce_ffnnv1/{t:%Y}/lsce_ffnnv1_mon_1deg_{t:%Y%m}.nc"
+            data_path: "{DATA_PATH}/lsce_ffnnv1/{t:%Y}/lsce_ffnnv1_mon_1deg_{t:%Y%m}.nc"
             functions:  # functions that will be applied to the pipeline xds --> xds
                 - databrewery.preprocess.rename_to_latlon
                 - databrewery.preprocess.center_coords_at_0
 
 
 soda_34:
-    description: "Simple Ocean Data Assimilation v3.4"
+    description:
+        Simple Ocean Data Assimilation v3.4 uses Argo, ship and
+        satellite data that is interpolated with a simple ocean model
     doi: "https://doi.org/10.1175/JCLI-D-18-0149.1"
     variables:
         - temperature
         - salinity
     remote:
         url: "http://dsrs.atmos.umd.edu/DATA/soda3.4.2/REGRIDED/ocean/soda3.4.2_5dy_ocean_reg_{t:%Y_%m_%d}.nc"
-    local_store: "/Users/luke/Desktop/soda_clim/soda_3.4.2/soda3.4.2_5dy_ocean_reg_{t:%Y_%m_%d}.nc"
+    local_store: "{DATA_PATH}/soda_clim/soda_3.4.2/soda3.4.2_5dy_ocean_reg_{t:%Y_%m_%d}.nc"
