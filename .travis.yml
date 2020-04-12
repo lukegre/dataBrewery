@@ -14,12 +14,14 @@ before_install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
+  - conda config --add channels conda-forge
+  - conda config --add channels anaconda
   - conda config --set always_yes yes --set changeps1 no --set show_channel_urls true
   - conda update -q conda
   - conda info -a
 
 install:
-  - conda env create -n databrewery-dev --file environment-dev-3.6.yml
+  - conda env create -n databrewery-dev --file requirements.txt
   - source activate databrewery-dev
   - conda install pip
   - conda list
@@ -34,8 +36,8 @@ install:
   - pip install isort
 
 script:
-  - coverage run --source databrewery -m py.test
-  - coverage report
+  # - coverage run --source databrewery -m py.test
+  # - coverage report
   - pushd docs
   - ./ci/run-linter.sh
 
