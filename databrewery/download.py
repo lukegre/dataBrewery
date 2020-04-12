@@ -6,6 +6,8 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 class Downloader:
     """
+    Base class for downloading files
+
     verbosity levels
         0: doesnt print anything
         1: prints minimal - commands only
@@ -18,12 +20,30 @@ class Downloader:
     def __init__(
         self,
         host,
-        verbose=2,
-        service=None,
         username=None,
+        service=None,
         password=None,
+        verbose=2,
         **kwargs,
     ):
+        """
+        Create a downloader that is connected to a remote server.
+
+        Parameters
+        ==========
+        host: str
+            host name as URL base
+        username: str
+            log in details
+        service: str
+            the keyring service name where password is stored
+        password: str
+            the password, if service is not provided
+        verbose: int
+            the level of verbosity
+        **kwargs: keyword=value pairs
+            passed on the the relevant connection initiater
+        """
 
         if (password is None) & (username is not None):
             from keyring import get_password
@@ -39,7 +59,7 @@ class Downloader:
         self._method_init(host, username, password, **kwargs)
 
     def _method_init(self, host, username, password, **kwargs):
-        # placehoder method for individual methods
+        """placehoder method for download sheme methods (FTP|SFTP|HTTP)"""
         pass
 
     def _check_host_valid(self, host):
@@ -53,13 +73,31 @@ class Downloader:
             )
 
     def _vdownload(self, remote, local, pbar_desc):
+        """placeholder"""
         pass
 
     def _qdownload(self, remote, local):
+        """placeholder"""
         pass
 
     def download_file(self, remote, local):
+        """
+        Downloads a file at the given remote url and saves locally
 
+        Parameters
+        ==========
+        remote: str
+            URL to the remote data
+        local: str
+            Path to where data will be stored locally
+
+        Returns
+        =======
+        status_code: int
+            0: downloaded
+            1: remote file does not exist
+            2: file exists locally
+        """
         slocal = shorten_path_for_print(local)
         if self.is_local_file_valid(local):
             self._print(f'File exists locally: {slocal}', lvl=2)
@@ -332,6 +370,11 @@ class HTTP(Downloader):
 
 
 class CDS(Downloader):
+    """
+    Special class for Climate Data Store that will fetch data for the given
+    variables
+    """
+
     def _method_init(self, host, username, password, **cdsapi_client_kwargs):
         import cdsapi
 
@@ -395,6 +438,7 @@ class CDS(Downloader):
 
 
 def shorten_path_for_print(path, maxlen=100):
+    """helper to print pretty URLs"""
     if len(path) <= maxlen:
         return path
 
@@ -416,6 +460,10 @@ def shorten_path_for_print(path, maxlen=100):
 
 
 def determine_connection_type(remote_url_unformatted):
+    """
+    helper to determine what downloading protocol or scheme use.
+    Currently supports: http, https, ftp, sftp, cds
+    """
     from urllib.parse import urlparse
 
     url = urlparse(str(remote_url_unformatted))

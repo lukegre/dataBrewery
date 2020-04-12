@@ -1,5 +1,13 @@
 class Record:
+    """
+    Stores the information for an entry in the catalog file
+    """
+
     def __init__(self, record_name, config_dict, verbose=2):
+        """
+        Should be called by the Catalog class as requires a
+        preformatted catalog dictionary (config_dict)
+        """
         from .utils import DictObject
 
         self.name = record_name
@@ -25,23 +33,7 @@ class Record:
         }
 
     def __str__(self):
-        name = self.name.upper()
-        blank = ' ' * 2
-        L = 80 - (len(name) + 2)
-        eq = '='
-        txt = f'{eq:=>{L//2-1}}  {name: >2}{blank:=<{L//2-1}}\n'
-        # n = len(self.name) + 2
-        for key in ['url', 'path', 'date', 'login', 'keywords']:
-            keyu = key.upper()
-            vals = getattr(self, key).__str__()
-            if vals == '':
-                continue
-            L = 80 - (len(key) + 2)
-            txt += f'\n{keyu: >2}'  # {blank:-<{L}}\n"
-            txt += ('\n' + vals).replace('\n', '\n    ')
-            txt += '\n'
-
-        return txt
+        return str(self.config)
 
     def _print(self, *msg):
         if self.verbose >= 1:
@@ -185,6 +177,26 @@ class Record:
         self.download_results = out
 
     def download_data(self, dates, njobs=1):
+        """
+        Download files for given dates.
+
+        Parameters
+        ==========
+        dates: date-like string or object
+            Can be one of the following:
+                1) a single datelike string or pandas.Timestamp
+                2) slice of datelike string or pandas.Timestamp
+                3) a pandas.DatetimeIndex object made with pandas.date_range
+        njobs: int
+            number of parallel connections to download with. Be carefuly,
+            some servers do not accept a large amount of connections.
+
+        Returns
+        =======
+        download_results: dict
+            a dictionary containing information about downloaded, existing
+            and files that could not be downloaded.
+        """
         from .utils import make_date_path_pairs
 
         paths = make_date_path_pairs(
@@ -193,7 +205,35 @@ class Record:
 
         self._download_data(paths, njobs=njobs)
 
-    def local_files(self, dates, automatic_download=False):
+        return self.download_results
+
+    def local_files(self, dates, njobs=1, auto_download=False):
+        """
+        A wrapper around download_data that returns the names of
+        local files. If the local files do not exist, then tries
+        to download them using download_data function.
+
+        Parameters
+        ==========
+        dates: date-like string or object
+            Can be one of the following:
+                1) a single datelike string or pandas.Timestamp
+                2) slice of datelike string or pandas.Timestamp
+                3) a pandas.DatetimeIndex object made with pandas.date_range
+        njobs: int (1)
+            number of parallel connections to download with. Be carefuly,
+            some servers do not accept a large amount of connections.
+        auto_download: bool (False)
+            will automatically download files if set to True, if False
+            will ask for confirmation
+
+        Returns
+        =======
+        local_file_names: list
+            a list of file names of files that exist locally. Note that
+            these files are exact replicas of the remote files and no
+            processing has been applied.
+        """
         from .utils import is_file_valid, make_date_path_pairs, DictObject
 
         paths = make_date_path_pairs(
@@ -214,12 +254,12 @@ class Record:
 
         if download_pairs != []:
             n = len(download_pairs)
-            if automatic_download:
+            if auto_download:
                 choice = 'y'
             else:
                 choice = input(f'{n} missing files. Download? [y/n]: ')
             if choice.lower().startswith('y'):
-                self._download_data(download_pairs)
+                self._download_data(download_pairs, njobs)
                 return self.local_files(dates)
             else:
                 return exists_locally
@@ -249,6 +289,14 @@ class Record:
 
 
 class PipeFiles:
+    """
+    UNDER DEVELOPMENT
+
+    Will be the class that is used to process the pipelines.
+    Still need to think about how custom functions can be
+    incorporated into the pipeline
+    """
+
     def __init__(self, name, parent, pipe_dict):
         self._parent = parent
         self._funcs = pipe_dict['functions']

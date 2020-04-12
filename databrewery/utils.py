@@ -5,7 +5,20 @@ import pandas as pd
 
 
 class DictObject(object):
+    """
+    Convert a dictionary item to an object that can be browsed interactively
+    """
+
     def __init__(self, d):
+        """
+        Converts dictionary to DictObject. You can use dictionary notation
+        on the DictObject class.
+
+        Parameters
+        ==========
+        d: dict
+            can be a nested dictionary
+        """
 
         for a, b in d.items():
             if isinstance(b, (list, tuple)):
@@ -37,6 +50,11 @@ class DictObject(object):
 
 
 class DatePath(str):
+    """
+    Base class for other functions that convert a specially formatted path
+    string into a path where dates are filled out.
+    """
+
     def __repr__(self):
         return f'{self.__class__.__name__}({self})'
 
@@ -74,6 +92,11 @@ class DatePath(str):
 
 
 class URL(DatePath):
+    """
+    Very similar to DatePath but has the *parsed* property that
+    returns a URL parsed object
+    """
+
     @property
     def parsed(self):
         from urllib.parse import urlparse
@@ -82,7 +105,28 @@ class URL(DatePath):
 
 
 class Path(DatePath):
+    """
+    A special Path class that has some functionality from the pathlib.Path
+    class. The difference from pathlib.Path, is that it accepts a special
+    date formatting
+    """
+
     def __init__(self, string):
+        """
+        Create a DatePath instance
+
+        Parameters
+        ==========
+        string: str
+            A string that represents a local path. Can have ~ to represent
+            HOME or can have a date format placeholder. The date formatter
+            must have the following structure = {t:<datetime formats>}. e.g.
+            {t:%Y%m%d} will become 20200228 if
+            Path.format(t=pd.Timestamp("2020-02-28")) or indexed with
+            Path["2020-02-28"]. Also supports pd.Timestamp, pd.DatetimeIndex,
+            slice of date range in string or pd.Timestamp, where the step is a
+            string denoting the time step.
+        """
         from pathlib import _windows_flavour, _posix_flavour, Path as _Path
         import os
 
@@ -106,6 +150,10 @@ class Path(DatePath):
 
     @property
     def globbed(self):
+        """
+        IF the base input contains an asterisk (*), the * will be replaced
+        with matching files.
+        """
         import pathlib
 
         path = pathlib.Path(self).expanduser()
@@ -121,6 +169,10 @@ class Path(DatePath):
             return flist
 
     def is_writable(self):
+        """
+        Checks if the given path (at any level) can be written to.
+        For example, if `/` is given, will return False (unless in sudo).
+        """
         import pathlib
         import os
 
@@ -139,6 +191,11 @@ class Path(DatePath):
 
 
 def get_dates(date_like):
+    """
+    A helper function for DatePath that will always return a pandas.Timestamp
+    or pandas.DatetimeIndex or return an error. Used for slicing with date-like
+    strings
+    """
     from pandas import Timestamp, DatetimeIndex
 
     if isinstance(date_like, (Timestamp, DatetimeIndex)):
@@ -159,6 +216,10 @@ def get_dates(date_like):
 
 
 def slice_to_date_range(slice_obj):
+    """
+    Helper function for get_dates that converts a slice to a
+    pandas.DatetimeIndex range.
+    """
     import pandas as pd
 
     t0, t1, ts = slice_obj.start, slice_obj.stop, slice_obj.step
@@ -182,6 +243,12 @@ def slice_to_date_range(slice_obj):
 
 
 def is_file_valid(local_path):
+    """
+    Helper function that checks if a file can be opened.
+    If valid, returns True, else False.
+
+    Currently supports netCDF or Zip files.
+    """
     from os.path import isfile
 
     if not isfile(local_path):
@@ -209,7 +276,25 @@ def is_file_valid(local_path):
 
 
 def make_date_path_pairs(dates, *date_paths):
-    # function could be standalone in db.utils
+    """
+    Helper function that creates paired paths from a given date range and
+    DatePath type objects.
+
+    Parameters
+    ==========
+    dates: list-like
+        Must be an iterable that contains pd.Timestamps
+    date_paths: DatePath objects
+        can be any number of DatePath objects that will return a formatted
+        path string if sliced with a date-like string or pd.Timestamp. The
+        date_paths must have the same formatting so that the same number of
+        file paths are returned.
+
+    Returns
+    =======
+    date_path_pairs
+        Couplets (if two date paths) of file paths that have the same date.
+    """
     from .utils import Path, URL
     from numpy import array
 

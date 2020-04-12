@@ -32,7 +32,7 @@ setup(
     license='MIT',
     long_description=long_description,
     classifiers=CLASSIFIERS,
-    name='dadaBrewery',
+    name='dataBrewery',
     packages=find_packages(),
     test_suite='databrewery/tests',
     tests_require=test_requirements,
