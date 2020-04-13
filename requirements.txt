@@ -5,3 +5,4 @@ xarray>=0.14.1
 keyring
 schema
 validators
+yaml
