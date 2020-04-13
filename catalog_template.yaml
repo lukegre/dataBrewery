@@ -1,17 +1,20 @@
 # can be used as replacements in other entries that will be replaced at runtime
 # must be all caps - will be replaced if in curly braces {ANY_CAPS_NAME}
 # ~ (tilde) can be used to represent the $HOME directory
-DATA_PATH: ~/Desktop
+DATA_PATH: ~/data
 
-lsce_ffnnv1:
+oc_cci:
     # description tells the user about the product and can be written over mutliple lines
     description:
-        LSCE-FFNN-v1 is a two-step neural network model for the
-        reconstruction of surface ocean pCO2 over the global ocean
-    doi: "https://doi.org/10.5194/gmd-12-2091-2019"  # must add doi for user
+        Surface ocean chlorophyll-a @ Global level 3 binned multi-sensor merged data
+        spatial resolution = 4 km resolution
+        temporal resolultion = daily, 8-daily, monthly
+        temporal coverage = 1997–2013 (Version 2); 1997–2012 (Version 1)
+    # must add doi/url to information about the source
+    doi: "https://esa-oceancolour-cci.org/sites/esa-oceancolour-cci.org/files/oc-cci_article_ocean_challenge_v21.pdf"
     variables:  # makes it easier for the user to find the data they want
-        - pco2
-        - ph
+        - ocean_color
+        - chlorophyll
     remote:
         # URL is where the data is downloaded from.
         # These URLs take a special syntax where {t:} denotes that a date should be inserted
@@ -21,32 +24,48 @@ lsce_ffnnv1:
         # %j = three digit day of the year;
         # %d = two digit day of the month
         # A more technical note: the first part of the url (ftp in this case) denotes the type of connection
-        url: "ftp://my.cmems-du.eu/Core/MULTIOBS_GLO_BIO_CARBON_SURFACE_REP_015_008/dataset-carbon-rep-monthly/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}*.nc"
-        service: "CMEMS"  # the name of the web service on the system keyring - more secure than password
-        username: "lgregor1"
-        # password: ''  # recommend to use the keyring rather
+        url: "ftp://oceancolour.org/occci-v4.2/geographic/netcdf/daily/chlor_a/{t:%Y}/ESACCI-OC-L3S-CHLOR_A-MERGED-1D_DAILY_4km_GEO_PML_OCx-{t:%Y%m%d}-fv4.2.nc"
+        # service: "oceancolor"  # the name of the web service on the system keyring - more secure than password
+        username: "oc-cci-data"
+        # We use password here to test the package, but it is recommend to use the keyring with `service` keyword
+        password: 'ELaiWai8ae'
         port: 22001  # optional port number if using sftp
     # local_store is where data is cloned to - remote.url and local_store must result in the same number of files
-    local_store: "{DATA_PATH}/pco2_denvilsommer/ffnn_v1/{t:%Y}/dataset-carbon-rep-monthly_{t:%Y%m}.nc"
+    local_store: "{DATA_PATH}/CHL-CCI/daily_4km/{t:%Y}/ESACCI-OC-L3S-CHLOR_A-MERGED-1D_DAILY_4km_GEO_PML_OCx-{t:%Y%m%d}-fv4.2.nc"
     # pipelines is currently just an idea, but I would like to be able to have a second component
     # that allows the user to access processed data at the given location.
     # if that data does not exist then process or download the data
     pipelines:  # this tells the brewery that you want to have a processed pipeline
         mon_1deg:  # this is the name of the pipeline - this is NB
-            data_path: "{DATA_PATH}/lsce_ffnnv1/{t:%Y}/lsce_ffnnv1_mon_1deg_{t:%Y%m}.nc"
+            data_path: "{DATA_PATH}/CHL-CCI/daily_1deg/{t:%Y}/ESACCI-CHLOR_A-MERGED-1D_DAILY_1deg_OCx-{t:%Y%m%d}-fv4.2.nc"
             functions:  # functions that will be applied to the pipeline xds --> xds
                 - databrewery.preprocess.rename_to_latlon
                 - databrewery.preprocess.center_coords_at_0
 
 
-soda_34:
+smos_cci:
     description:
-        Simple Ocean Data Assimilation v3.4 uses Argo, ship and
-        satellite data that is interpolated with a simple ocean model
-    doi: "https://doi.org/10.1175/JCLI-D-18-0149.1"
+        SMOS Climate change initiative satellite salinity (http://cci.esa.int/salinity);
+        temporal resolution = 7days rolling;
+        spatial resolution = 025deg;
+    doi: https://doi.org/10.1016/j.rse.2018.05.022
+    remote:
+        url: "ftp://anon-ftp.ceda.ac.uk/neodc/esacci/sea_surface_salinity/data/v01.8/7days/{t:%Y}/ESACCI-SEASURFACESALINITY-L4-SSS-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km-{t:%Y%m%d}-fv1.8.nc"
+    local_store: "{DATA_PATH}/SMOS_CCI/{t:%Y}/ESACCI-L4-SSS-MERGED_OI_7DAYRUN_DAILY_25km-{t:%Y%m%d}-fv1.8.nc"
+    variables:
+        - salinity
+
+
+sst_oi_bulk:  # uses http connection scheme
+    description:
+        Daily Optimally Interpolated Sea Surface Temperature version 2  bulk temperature
+        Reynolds et al. (2007) = https://doi.org/10.1175/2007JCLI1824.1;
+        Banzon et al. (2016); https://doi.org/10.5194/essd-8-165-2016
+    doi: "https://doi.org/10.5194/essd-8-165-2016"
     variables:
         - temperature
-        - salinity
+        - SSTbulk
+        - seaice
     remote:
-        url: "http://dsrs.atmos.umd.edu/DATA/soda3.4.2/REGRIDED/ocean/soda3.4.2_5dy_ocean_reg_{t:%Y_%m_%d}.nc"
-    local_store: "{DATA_PATH}/soda_clim/soda_3.4.2/soda3.4.2_5dy_ocean_reg_{t:%Y_%m_%d}.nc"
+        url: "https://data.nodc.noaa.gov/ghrsst/GDS2/L4/GLOB/NCEI/AVHRR_OI/v2/{t:%Y}/{t:%j}/{t:%Y%m%d}120000-NCEI-L4_GHRSST-SSTblend-AVHRR_OI-GLOB-v02.0-fv02.0.nc"
+    local_store: "{DATA_PATH}/SST-AVHRR-NCEI/NCEI-L4_GHRSST-SSTblend-AVHRR_OI-GLOB_{t:%Y_%m_%d}.nc"

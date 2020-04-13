@@ -69,13 +69,19 @@ def validate_catalog(catalog_dict):
     """
     Validates the catalog entries against the schema
     """
+    from schema import SchemaError
+
     validated_catalog = {}
     for key in catalog_dict:
-        record = catalog_dict[key]
-        valid_record = schema.validate(record)
-        validated_catalog[key] = valid_record
+        try:
+            record = catalog_dict[key]
+            valid_record = schema.validate(record)
+            validated_catalog[key] = valid_record
 
-        check_datepaths(valid_record)
+            check_datepaths(valid_record)
+        except SchemaError as e:
+            e.args = (f"{e.args[0]} in record entry '{key}'",)
+            raise e
 
     return validated_catalog
 

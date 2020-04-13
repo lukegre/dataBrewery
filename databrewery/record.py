@@ -103,9 +103,9 @@ class Record:
                     os.remove(local)
                     warn(
                         '\n\n'
-                        + '#' * 40
+                        + '#' * 80
                         + f'\nRemoved partially downloaded file {local}\n'
-                        + '#' * 40
+                        + '#' * 80
                         + '\n'
                     )
                 # downloader connection closed to avoid too many connections
@@ -240,8 +240,6 @@ class Record:
             dates, self.config['remote']['url'], self.config['local_store']
         )
 
-        # the current structure is perhaps not the best for a DAG workflow
-        # this is a slightly hacky solution to the problem
         exists_locally = []
         download_pairs = []
         for path_remote, path_local in paths:
