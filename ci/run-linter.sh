@@ -15,6 +15,7 @@ black --check -S -l 79 databrewery
 echo "[isort]"
 isort --recursive --check-only -w 79 databrewery
 
+# commented because there are no docs yet
 # echo "[doc8]"
 # doc8 docs/source
 # doc8 *.rst
