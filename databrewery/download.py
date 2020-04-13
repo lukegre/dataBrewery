@@ -46,9 +46,17 @@ class Downloader:
         """
 
         if (password is None) & (username is not None):
-            from keyring import get_password
+            from keyring import get_password, set_password
 
             password = get_password(service, username)
+            if password is None:
+                import getpass
+
+                password = getpass.getpass(
+                    f'No password for service ({service}: {username}). '
+                    'Enter password: '
+                )
+                set_password(service, username, password)
         elif username is None:
             username = 'anonymous'
             password = ''
@@ -134,13 +142,14 @@ class Downloader:
         # get the remote_directory
         remote_path = url.path
         remote_directory, remote_file = os.path.split(remote_path)
-
         if remote_directory != self._cache_dir:
             self._cache_dir = remote_directory
             self._cache_flist = self.listdir(remote_directory)
 
         if self._cache_flist == []:
-            self._print(f'URL does not exist: {remote_directory}', lvl=3)
+            from warnings import warn
+
+            warn(f'URL does not exist: {remote_directory}')
             return None
 
         # returns matches for *? [0-9A-Z]
@@ -337,9 +346,13 @@ class HTTP(Downloader):
         from tqdm import tqdm
 
         req = requests.get(remote, auth=self.auth, stream=True)
-        if not req.ok:
-            self._print(f'URL does not exist: {remote}', lvl=2)
+        if req.status_code == 401:
+            req.raise_for_status()
+        elif req.status_code == 404:
+            self._print(f'URL does not exist: {remote}', lvl=1)
             return 1
+        elif not req.ok:
+            req.raise_for_status()
 
         step = 5 * 2 ** 10
         size = int(req.headers.get('content-length', 0))
@@ -355,9 +368,13 @@ class HTTP(Downloader):
         import requests
 
         req = requests.get(remote, auth=self.auth, stream=True)
-        if not req.ok:
-            self._print(f'URL does not exist: {remote}', lvl=2)
+        if req.status_code == 401:
+            req.raise_for_status()
+        elif req.status_code == 404:
+            self._print(f'URL does not exist: {remote}', lvl=1)
             return 1
+        elif not req.ok:
+            req.raise_for_status()
 
         step = 5 * 2 ** 10
         with open(local, 'wb') as f:

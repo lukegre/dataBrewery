@@ -36,10 +36,10 @@ install:
   - pip install isort
 
 script:
-  # - coverage run --source databrewery -m py.test
-  # - coverage report
-  - pushd docs
+  - coverage run --source databrewery -m py.test
+  - coverage report
+  # - pushd docs   # no docs yet
   - ./ci/run-linter.sh
 
-after_success:
-  - coveralls
+# after_success:
+  # - coveralls  # not set up yet
