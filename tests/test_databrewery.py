@@ -1,4 +1,10 @@
+import os
+
+import pytest
+
 from databrewery import Catalog
+
+is_travis = os.environ.pop('TRAVIS', 'false') == 'true'
 
 
 def test_catalog_load():
@@ -22,8 +28,8 @@ def test_record_print():
     print(db.sst_oi_bulk)
 
 
+@pytest.mark.skipif(is_travis, reason='Will not run in CI')
 def test_download_http():
-    import os
 
     db = Catalog('./catalog_template.yaml')
 
@@ -42,6 +48,7 @@ def test_download_http():
     assert flist1 == flist2
 
 
+@pytest.mark.skipif(is_travis, reason='Will not run in CI')
 def test_download_http_range():
 
     db = Catalog('./catalog_template.yaml')
@@ -53,8 +60,8 @@ def test_download_http_range():
     assert len(flist) == 3
 
 
+@pytest.mark.skipif(is_travis, reason='Will not run in CI')
 def test_download_ftp_wo_password():
-    import os
 
     db = Catalog('./catalog_template.yaml', verbose=0)
 
@@ -72,8 +79,8 @@ def test_download_ftp_wo_password():
     assert flist1 == flist2
 
 
+@pytest.mark.skipif(is_travis, reason='Will not run in CI')
 def test_download_ftp_password():
-    import os
 
     db = Catalog('./catalog_template.yaml', verbose=0)
 
