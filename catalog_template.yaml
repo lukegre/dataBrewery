@@ -9,7 +9,7 @@ oc_cci:
         Surface ocean chlorophyll-a @ Global level 3 binned multi-sensor merged data
         spatial resolution = 4 km resolution
         temporal resolultion = daily, 8-daily, monthly
-        temporal coverage = 1997–2013 (Version 2); 1997–2012 (Version 1)
+        temporal coverage = 1997-2013 (Version 2); 1997-2012 (Version 1)
     # must add doi/url to information about the source
     doi: "https://esa-oceancolour-cci.org/sites/esa-oceancolour-cci.org/files/oc-cci_article_ocean_challenge_v21.pdf"
     variables:  # makes it easier for the user to find the data they want
