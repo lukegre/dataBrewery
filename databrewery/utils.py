@@ -182,7 +182,7 @@ class Path(DatePath):
 
         if writable:
             return True
-        elif not parent.is_mount():
+        elif not os.path.ismount(str(parent)):
             parent = Path(parent)
             result = parent.is_writable()
         else:
