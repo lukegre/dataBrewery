@@ -51,7 +51,8 @@ def center_coords_at_0(xds):
     if not strictly_increasing(x):
         sort_idx = np.argsort(x)
         xds = xds.isel(**{'lon': sort_idx})
-        xds['lon'].values = x[sort_idx]
+        # xds['lon'].values = x[sort_idx]
+        xds = xds.assign_coords(lon=x[sort_idx])
         xds = _netcdf_add_brew_hist(xds, 'center coords -> 0:360 to -180:180')
 
     if not strictly_increasing(y):
