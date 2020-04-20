@@ -127,7 +127,9 @@ def interpolate_1deg(xds, method='linear'):
 
     attrs = xds.attrs
     xds = (
-        xds.interp(lat=arange(-89.5, 90), lon=arange(-179.5, 180), method=method)
+        xds.interp(
+            lat=arange(-89.5, 90), lon=arange(-179.5, 180), method=method
+        )
         # filling gaps due to interpolation along 180deg
         .roll(lon=180, roll_coords=False)
         .interpolate_na(dim='lon', limit=3)
@@ -143,7 +145,9 @@ def interpolate_1deg(xds, method='linear'):
 def resample_time_1D(xds):
     attrs = xds.attrs
 
-    xds = xds.resample(time='1D', keep_attrs=True).mean('time', keep_attrs=True)
+    xds = xds.resample(time='1D', keep_attrs=True).mean(
+        'time', keep_attrs=True
+    )
 
     xds.attrs.update(attrs)
     xds = _netcdf_add_brew_hist(xds, 'resampled to time to 1D')
@@ -156,7 +160,9 @@ def resample_time_1M(xds):
 
     attrs = xds.attrs
 
-    xds = xds.resample(time='1MS', keep_attrs=True).mean('time', keep_attrs=True)
+    xds = xds.resample(time='1MS', keep_attrs=True).mean(
+        'time', keep_attrs=True
+    )
     xds.time.values += pd.Timedelta('14D')
 
     xds.attrs.update(attrs)
