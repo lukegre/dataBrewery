@@ -61,21 +61,16 @@ def center_coords_at_0(xds):
     return xds
 
 
-def center_time_monthly_15th(xds):
+def time_monthly_to_dayofmonth(xds, dayofmonth=1):
     """
     If monthly data, centeres on the 15th of the month
     """
-    from pandas import Timestamp
+    import numpy as np
 
-    assert xds.time.size == 1, 'Only accepts one month DataArrays'
+    time = xds.time.values.astype('datetime64[M]').astype('datetime64[ns]')
+    xds['time'] = time + np.timedelta64(dayofmonth-1, 'D')
 
-    attrs = xds.attrs
-    time = Timestamp(xds.time.values[0])
-
-    xds.time.values[:] = Timestamp(year=time.year, month=time.month, day=15)
-
-    xds.attrs = attrs
-    xds = _netcdf_add_brew_hist(xds, 'centered monthly data to 15th')
+    xds = _netcdf_add_brew_hist(xds, f'monthly days set to {dayofmonth}th')
     return xds
 
 
